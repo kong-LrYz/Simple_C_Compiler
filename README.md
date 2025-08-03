@@ -47,7 +47,8 @@
 ---
 
 ### 思路
-源代码
+
+- 源代码
 ↓ 词法分析（flex）
 ↓ 语法分析+语义分析（yacc）
 ↓ 生成中间代码（LLVM IR ）
@@ -165,6 +166,8 @@ if ($1.constant && $3.constant) {
     $$.addr = new_temp();
     gen(opr_add, $1.addr, $3.addr, $$.addr);
 }
+```
+
 之后还需要学习一下LLVM表示
 
 先学符号表知识和LLVM知识
