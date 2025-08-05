@@ -156,7 +156,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 391 "parser.y"
+#line 445 "parser.y"
 
     int ival;
     float fval;
@@ -166,7 +166,7 @@ union YYSTYPE
         int ptr_level;
         int lastpar;                        //for function,record the last parameter's addr
         int psize;                          //for function,record all parameters's size
-        int is_functionName;                //for function
+
     }sval;
 
 

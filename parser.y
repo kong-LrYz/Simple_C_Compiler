@@ -109,7 +109,7 @@ int last_index = 0;                                 //the current function's las
 
 
 struct btab_struct btab[TABLE_NUM];
-int btab_count = 0;
+int btab_count = 1;
 
 int var_point = 12;                                  //point variables's localation,unit:byte(8bits)
 
@@ -125,7 +125,8 @@ int current_basic_type;
 
 int bitsmask = 0;                                   //use to exam specifier conflict
 
-
+int stack[10];
+int sp = 0;
 
 
 
@@ -144,6 +145,9 @@ void Display_Btab();
 
 void Clear_current_type();
 void Clear_After_Declaration();
+
+void pushStack(int ele);
+int popStack();
 
 
 extern int yylineno;
@@ -238,7 +242,7 @@ void Is_Valid_Declarator(char* name){
 }
 
 void Is_Valid_Function(char* name){
-    for(int i = 0;i < btab_count;i++){
+    for(int i = 1;i < btab_count;i++){
         if(strcmp(name,btab[i].name) == 0){
             printf("wrong:\tthe repeated function name %s",name);
             exit(0);
@@ -281,7 +285,7 @@ void Is_correct_specifier(){
 
 
 void Display_Nametab(){
-    printf("the following is symbol table:\n");
+    printf("the following is name table (nametab):\n");
 
         // Print table header
     printf("%-4s %-15s %-20s %-12s %-10s %-6s %-6s %-6s %-6s %-6s %s\n",
@@ -369,7 +373,45 @@ void Display_Nametab(){
 }
 
 void Display_Btab(){
+    printf("the following is block table (btab):\n");
+    printf("%-4s %-15s %-20s %-12s %-10s %-10s %-10s %-10s\n",
+           "Idx", "Name", "Types", "BasicType", "LastPar", "Last", "PSize", "VSize");
+    printf("---- --------------- -------------------- ------------ ---------- ---------- ---------- ----------\n");
 
+    char* type_name[64];
+    type_name[symbol_bool] = "bool";
+    type_name[symbol_char] = "char";
+    type_name[symbol_const] = "const";
+    type_name[symbol_static] = "static";
+    type_name[symbol_double] = "double";
+    type_name[symbol_float] = "float";
+    type_name[symbol_int] = "int";
+    type_name[symbol_long] = "long";
+    type_name[symbol_short] = "short";
+    type_name[symbol_signed] = "signed";
+    type_name[symbol_unsigned] = "unsigned";
+    type_name[symbol_void] = "void";
+    type_name[symbol_function] = "function";
+    type_name[symbol_point] = "point";
+
+
+    for (int i = 1; i < btab_count; i++) {
+
+        char typestr[128] = "";
+        for (int j = 0; j < btab[i].type_num; j++) {
+            strcat(typestr, type_name[btab[i].type[j]]);
+            if (j + 1 < btab[i].type_num) strcat(typestr, ",");
+        }
+        printf("%-4d %-15s %-20s %-12s %-10u %-10u %-10u %-10u\n",
+               i,
+               btab[i].name ? btab[i].name : "(null)",
+               typestr,
+               type_name[btab[i].basic_type],
+               btab[i].lastpar,
+               btab[i].last,
+               btab[i].psize,
+               btab[i].vsize);
+    }
 }
 
 void Clear_current_type(){
@@ -381,6 +423,14 @@ void Clear_current_type(){
 void Clear_After_Declaration(){
     last_index = 0;                             //the function parser or gobal var declaration is finished, set last_index = 0.
     var_point = 12;                               //the function parser or gobal var declaration is finished, reset var_point.
+}
+
+void pushStack(int ele){
+    stack[sp++] = ele;
+}
+
+int popStack(){
+    return stack[--sp];
 }
 
 
@@ -397,7 +447,7 @@ void Clear_After_Declaration(){
         int ptr_level;
         int lastpar;                        //for function,record the last parameter's addr
         int psize;                          //for function,record all parameters's size
-        int is_functionName;                //for function
+
     }sval;
 
 
@@ -598,94 +648,91 @@ init-declarator-list:
 init-declarator:                    //have initializer or not
     declarator initializer
     {
-        if($1.is_functionName == 0){
+        Is_Valid_Declarator($1.name);
 
-            Is_Valid_Declarator($1.name);
+        if(current_basic_type == symbol_void){
+            printf("wrong: 'void' can't be assign\n");
+            exit(0);
+        }
 
-            if(current_basic_type == symbol_void){
-                printf("wrong: 'void' can't be assign\n");
-                exit(0);
-            }
-
-            if(current_basic_type == $2.type){
+        if(current_basic_type == $2.type){
             
-            }
-            else if(current_basic_type == symbol_char && $2.type == symbol_bool){
-                $2.c_val = $2.b_val;
-            }
-            else if(current_basic_type == symbol_char && $2.type == symbol_int){
-                $2.c_val = $2.i_val;
-            }
-            else if(current_basic_type == symbol_char && $2.type == symbol_float){
-                printf("warning: implicit conversion from 'float' to 'char' changes value from 1.234 to 1 [-Wliteral-conversion]\n");
-                $2.c_val = (int)$2.f_val;
-            }
-            else if(current_basic_type == symbol_char && $2.type == symbol_double){
-                printf("warning: implicit conversion from 'double' to 'char' changes value from 1.234 to 1 [-Wliteral-conversion]\n");
-                $2.c_val = (int)$2.d_val;
-            }
+        }
+        else if(current_basic_type == symbol_char && $2.type == symbol_bool){
+            $2.c_val = $2.b_val;
+        }
+        else if(current_basic_type == symbol_char && $2.type == symbol_int){
+            $2.c_val = $2.i_val;
+        }
+        else if(current_basic_type == symbol_char && $2.type == symbol_float){
+            printf("warning: implicit conversion from 'float' to 'char' changes value from 1.234 to 1 [-Wliteral-conversion]\n");
+            $2.c_val = (int)$2.f_val;
+        }
+        else if(current_basic_type == symbol_char && $2.type == symbol_double){
+            printf("warning: implicit conversion from 'double' to 'char' changes value from 1.234 to 1 [-Wliteral-conversion]\n");
+            $2.c_val = (int)$2.d_val;
+        }
         
-            else if(current_basic_type == symbol_bool && $2.type == symbol_char){
-                $2.b_val = ((int)$2.c_val == 0) ? 0 : 1;
-            }
-            else if(current_basic_type == symbol_bool && $2.type == symbol_int){
-                $2.b_val = ($2.i_val == 0) ? 0 : 1;
-            }
-            else if(current_basic_type == symbol_bool && $2.type == symbol_float){
-                $2.b_val = ($2.f_val == 0) ? 0 : 1;
-            }
-            else if(current_basic_type == symbol_bool && $2.type == symbol_double){
-                $2.b_val = ($2.d_val == 0) ? 0 : 1;
-            }
+        else if(current_basic_type == symbol_bool && $2.type == symbol_char){
+            $2.b_val = ((int)$2.c_val == 0) ? 0 : 1;
+        }
+        else if(current_basic_type == symbol_bool && $2.type == symbol_int){
+            $2.b_val = ($2.i_val == 0) ? 0 : 1;
+        }
+        else if(current_basic_type == symbol_bool && $2.type == symbol_float){
+            $2.b_val = ($2.f_val == 0) ? 0 : 1;
+        }
+        else if(current_basic_type == symbol_bool && $2.type == symbol_double){
+            $2.b_val = ($2.d_val == 0) ? 0 : 1;
+        }
 
-            else if(current_basic_type == symbol_int && $2.type == symbol_char){
-                $2.i_val = (int)$2.c_val;
-            }
-            else if(current_basic_type == symbol_int && $2.type == symbol_bool){
-            $2.i_val = $2.b_val;
-            }
-            else if(current_basic_type == symbol_int && $2.type == symbol_float){
-                $2.i_val = (int)$2.f_val;
-            }
-            else if(current_basic_type == symbol_int && $2.type == symbol_double){
-                $2.i_val = (int)$2.d_val;
-            }
+        else if(current_basic_type == symbol_int && $2.type == symbol_char){
+            $2.i_val = (int)$2.c_val;
+        }
+        else if(current_basic_type == symbol_int && $2.type == symbol_bool){
+         $2.i_val = $2.b_val;
+        }
+        else if(current_basic_type == symbol_int && $2.type == symbol_float){
+            $2.i_val = (int)$2.f_val;
+        }
+        else if(current_basic_type == symbol_int && $2.type == symbol_double){
+            $2.i_val = (int)$2.d_val;
+        }
 
-            else if(current_basic_type == symbol_float && $2.type == symbol_char){
-                $2.f_val = (float)$2.c_val;
-            }
-            else if(current_basic_type == symbol_float && $2.type == symbol_bool){
-                $2.f_val = (float)$2.b_val;
-            }
-            else if(current_basic_type == symbol_float && $2.type == symbol_int){
-                $2.f_val = (float)$2.i_val;
-            }
-            else if(current_basic_type == symbol_float && $2.type == symbol_double){
-                $2.f_val = (float)$2.d_val;
-            }
+        else if(current_basic_type == symbol_float && $2.type == symbol_char){
+            $2.f_val = (float)$2.c_val;
+        }
+        else if(current_basic_type == symbol_float && $2.type == symbol_bool){
+            $2.f_val = (float)$2.b_val;
+        }
+        else if(current_basic_type == symbol_float && $2.type == symbol_int){
+            $2.f_val = (float)$2.i_val;
+        }
+        else if(current_basic_type == symbol_float && $2.type == symbol_double){
+            $2.f_val = (float)$2.d_val;
+        }
 
-            else if(current_basic_type == symbol_double && $2.type == symbol_char){
-                $2.d_val = (double)$2.c_val;
-            }
-            else if(current_basic_type == symbol_double && $2.type == symbol_bool){
-                $2.d_val = (double)$2.b_val;
-            }
-            else if(current_basic_type == symbol_double && $2.type == symbol_int){
-                $2.d_val = (double)$2.i_val;
-            }
-            else if(current_basic_type == symbol_double && $2.type == symbol_float){
-                $2.d_val = (double)$2.f_val;
-            }
+        else if(current_basic_type == symbol_double && $2.type == symbol_char){
+            $2.d_val = (double)$2.c_val;
+        }
+        else if(current_basic_type == symbol_double && $2.type == symbol_bool){
+            $2.d_val = (double)$2.b_val;
+        }
+        else if(current_basic_type == symbol_double && $2.type == symbol_int){
+            $2.d_val = (double)$2.i_val;
+        }
+        else if(current_basic_type == symbol_double && $2.type == symbol_float){
+            $2.d_val = (double)$2.f_val;
+        }
 
             Enter_Nametab(current_type,current_type_num,current_basic_type,variable,$1.name,true,var_point,$2.b_val,$2.c_val,$2.d_val,$2.f_val,$2.i_val,$2.l_val,$2.s_val,$2.p_val,$1.ptr_level);            //Enter nametab
-        }
+
     }
     |declarator
     {
-        if($1.is_functionName == 0){
-            Is_Valid_Declarator($1.name);                
-            Enter_Nametab(current_type,current_type_num,current_basic_type,variable,$1.name,true,var_point,0,0x00,0,0,0,0,0,NULL,$1.ptr_level);            //Enter nametab
-        }
+
+        Is_Valid_Declarator($1.name);                
+        Enter_Nametab(current_type,current_type_num,current_basic_type,variable,$1.name,true,var_point,0,0x00,0,0,0,0,0,NULL,$1.ptr_level);            //Enter nametab
     }
     ;
 
@@ -696,7 +743,8 @@ declarator:
         $$.ptr_level = $1.ptr_level;
         $$.name = $1.name;
         $$.psize = $1.psize;
-        $$.is_functionName = $1.is_functionName;
+
+        $$.lastpar = $1.lastpar;      //when declarator is function' name,lastpar has meaning.
     }
     ;
 
@@ -707,7 +755,8 @@ ptr-declarator:
         $$.ptr_level = 0;
         $$.name = $1.name;
         $$.psize = $1.psize;
-        $$.is_functionName = $1.is_functionName;
+
+        $$.lastpar = $1.lastpar;      //when declarator is function' name,lastpar has meaning.
     }
  	|ptr-operator ptr-declarator     //Recursive form,example:   ** a;
     {
@@ -727,13 +776,14 @@ noptr-declarator:
         $$.value = 0;
         $$.ptr_level = 0;
         $$.name = $1.name;
-        $$.is_functionName = 0;
     }
-    |declarator-id parameters-and-qualifiers                     //int f(int x);
+    |declarator-id parameters-and-qualifiers                     //int f(int x)
     {
         $$.name = $1.name;
         $$.psize = var_point;
-        $$.is_functionName = 1;
+        $$.lastpar = last_index;
+
+        last_index = 0;                     //the function's parameter declaration is finished, set last_index = 0.
     }
     |noptr-declarator left_bracket   constant-expression right_bracket
     |left_paren ptr-declarator right_paren
@@ -742,7 +792,6 @@ noptr-declarator:
 declarator-id:
     id-expression
     {
-        
         $$.value = 0;
         $$.ptr_level = 0;
         $$.name = $1.name;
@@ -2163,8 +2212,7 @@ function-definition:
     decl-specifier-seq declarator function-body
     {  
         Is_Valid_Function($2.name);
-        // Enter_Btab($1.type,$1.type_num,$1.basic_type,$2.name,$2.lastpar,last_index,$2.psize,var_point);      //enter btab;
-
+        Enter_Btab($1.type,$1.type_num,$1.basic_type,$2.name,$2.lastpar,last_index,$2.psize,var_point);      //enter btab;
     }
     ;
 
@@ -2291,7 +2339,7 @@ int main(int argc,char* argv[]){
     /* yydebug = 1; */
     yyparse();
     Display_Nametab();
-
+    Display_Btab();
 
 
     fclose(f);
