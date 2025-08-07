@@ -7,6 +7,8 @@
 %%
 
 [ \t\r\n]+          {}
+"//".*               {}
+"/*"([^*]|\*+[^*])*\*+"/"  {}
 
 "bool"                {return boolsym;}
 "char"                {return charsym;}

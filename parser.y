@@ -106,12 +106,13 @@ struct code_struct{
 struct nametab_struct nametab[TABLE_NUM];
 int nametab_count = 1;
 int last_index = 0;                                 //the current function's last var
-
+int par_index = 0;                                  //the current function's last par
 
 struct btab_struct btab[TABLE_NUM];
 int btab_count = 1;
 
 int var_point = 12;                                  //point variables's localation,unit:byte(8bits)
+
 
 
 struct atab_struct atab[TABLE_NUM];
@@ -136,7 +137,7 @@ void yyerror(const char *s);
 void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bool normal,int adr,int b_val,char c_val,double d_val,float f_val,int i_val,long l_val,short s_val,void* p_val,int ptr_level);
 void Enter_Btab(int type[],int type_num,int basic_type,char* name,int lastpar,int last,int psize,int vsize);
 
-void Is_Valid_Declarator(char* name);
+void Is_Valid_Declarator(char* name,int loop);
 void Is_Valid_Function(char* name);
 void Is_correct_specifier();
 
@@ -224,13 +225,7 @@ void Enter_Btab(int type[],int type_num,int basic_type,char* name,int lastpar,in
     btab_count++;
 }
 
-void Is_Valid_Declarator(char* name){
-
-    if(last_index == 0){return;}
-
-    int loop = nametab_count;
-
-    loop--;
+void Is_Valid_Declarator(char* name,int loop){
     while(1){
         if(strcmp(name,nametab[loop].name) == 0){
             printf("wrong:\tthe repeated declarator %s",name);
@@ -421,8 +416,9 @@ void Clear_current_type(){
 }
 
 void Clear_After_Declaration(){
-    last_index = 0;                             //the function parser or gobal var declaration is finished, set last_index = 0.
-    var_point = 12;                               //the function parser or gobal var declaration is finished, reset var_point.
+    last_index = 0;                             //the function or gobal var declaration is finished, set last_index = 0.
+    var_point = 12;                               //the function or gobal var declaration is finished, reset var_point.
+    par_index = 0;
 }
 
 void pushStack(int ele){
@@ -648,8 +644,12 @@ init-declarator-list:
 init-declarator:                    //have initializer or not
     declarator initializer
     {
-        Is_Valid_Declarator($1.name);
-
+        if(par_index != 0){
+            Is_Valid_Declarator($1.name,par_index);                     //compare declarator and current fucnction's par
+        }
+        if(last_index != 0){
+            Is_Valid_Declarator($1.name,last_index);                //compare declarator and current fucnction's vars
+        }
         if(current_basic_type == symbol_void){
             printf("wrong: 'void' can't be assign\n");
             exit(0);
@@ -730,8 +730,12 @@ init-declarator:                    //have initializer or not
     }
     |declarator
     {
-
-        Is_Valid_Declarator($1.name);                
+        if(par_index != 0){
+            Is_Valid_Declarator($1.name,par_index);                     //compare declarator and current fucnction's pars
+        }
+        if(last_index != 0){
+            Is_Valid_Declarator($1.name,last_index);                //compare declarator and current fucnction's vars
+        }
         Enter_Nametab(current_type,current_type_num,current_basic_type,variable,$1.name,true,var_point,0,0x00,0,0,0,0,0,NULL,$1.ptr_level);            //Enter nametab
     }
     ;
@@ -783,7 +787,8 @@ noptr-declarator:
         $$.psize = var_point;
         $$.lastpar = last_index;
 
-        last_index = 0;                     //the function's parameter declaration is finished, set last_index = 0.
+        par_index = last_index;             //record current function's last parameter's index
+        last_index = 0;                     //the function's parameter declaration is finished, set last_index = 0 
     }
     |noptr-declarator left_bracket   constant-expression right_bracket
     |left_paren ptr-declarator right_paren
@@ -819,14 +824,18 @@ parameter-declaration-list:
 parameter-declaration:
 	decl-specifier-seq declarator
     {
-        Is_Valid_Declarator($2.name);
+        if(last_index != 0){
+            Is_Valid_Declarator($2.name,last_index); 
+        }
         Enter_Nametab($1.type,$1.type_num,$1.basic_type,variable,$2.name,false,var_point,0,0x00,0,0,0,0,0,NULL,$2.ptr_level);
         
         Clear_current_type();                   //finish current type,need to be cleared.
     }
  	|decl-specifier-seq declarator equal initializer-clause
     {
-        Is_Valid_Declarator($2.name);
+        if(last_index != 0){
+            Is_Valid_Declarator($2.name,last_index); 
+        }
 
         if(current_basic_type == symbol_void){
             printf("wrong: 'void' can't be assign\n");
