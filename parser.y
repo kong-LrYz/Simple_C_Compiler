@@ -3,9 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "emitter_tmpfile.h"
 
 
-FILE *fp;
+static FuncEmitterTF fe;
+FILE *final_out;
 
 #define TABLE_NUM 1000
 
@@ -226,13 +228,21 @@ void Enter_Btab(int type[],int type_num,int basic_type,char* name,int lastpar,in
 }
 
 void Is_Valid_Declarator(char* name,int loop){
-    while(1){
+    while(1){                                                                           //reseach in nametab
+        if(loop == 0) break;
         if(strcmp(name,nametab[loop].name) == 0){
             printf("wrong:\tthe repeated declarator %s",name);
             exit(0);
         }
         loop = nametab[loop].link;
         if(loop == 0) break;
+    }
+    
+    for(int i = 1;i < btab_count;i++){                                                  //reseach in btab
+        if(strcmp(name,btab[i].name) == 0){
+            printf("wrong:\tthe repeated function name %s",name);
+            exit(0);
+        }
     }
 }
 
@@ -644,12 +654,9 @@ init-declarator-list:
 init-declarator:                    //have initializer or not
     declarator initializer
     {
-        if(par_index != 0){
-            Is_Valid_Declarator($1.name,par_index);                     //compare declarator and current fucnction's par
-        }
-        if(last_index != 0){
-            Is_Valid_Declarator($1.name,last_index);                //compare declarator and current fucnction's vars
-        }
+        Is_Valid_Declarator($1.name,par_index);                     //compare declarator and current fucnction's par
+        Is_Valid_Declarator($1.name,last_index);                //compare declarator and current fucnction's vars
+        
         if(current_basic_type == symbol_void){
             printf("wrong: 'void' can't be assign\n");
             exit(0);
@@ -730,12 +737,9 @@ init-declarator:                    //have initializer or not
     }
     |declarator
     {
-        if(par_index != 0){
-            Is_Valid_Declarator($1.name,par_index);                     //compare declarator and current fucnction's pars
-        }
-        if(last_index != 0){
-            Is_Valid_Declarator($1.name,last_index);                //compare declarator and current fucnction's vars
-        }
+        Is_Valid_Declarator($1.name,par_index);                     //compare declarator and current fucnction's pars
+        Is_Valid_Declarator($1.name,last_index);                //compare declarator and current fucnction's vars
+        
         Enter_Nametab(current_type,current_type_num,current_basic_type,variable,$1.name,true,var_point,0,0x00,0,0,0,0,0,NULL,$1.ptr_level);            //Enter nametab
     }
     ;
@@ -789,6 +793,8 @@ noptr-declarator:
 
         par_index = last_index;             //record current function's last parameter's index
         last_index = 0;                     //the function's parameter declaration is finished, set last_index = 0 
+    
+        fetf_begin(&fe, final_out, $1.name, var_point);             //init emitter
     }
     |noptr-declarator left_bracket   constant-expression right_bracket
     |left_paren ptr-declarator right_paren
@@ -2217,11 +2223,13 @@ initializer-list:
 
 /*function definition*/
 function-definition:
-
     decl-specifier-seq declarator function-body
     {  
         Is_Valid_Function($2.name);
         Enter_Btab($1.type,$1.type_num,$1.basic_type,$2.name,$2.lastpar,last_index,$2.psize,var_point);      //enter btab;
+
+        fetf_fix_locals(&fe,var_point);                     //set real VSize
+        fetf_end(&fe);                                      //insert prologue
     }
     ;
 
@@ -2343,7 +2351,7 @@ int main(int argc,char* argv[]){
     extern FILE *yyin;
     yyin = f;
 
-    fp = fopen("output.asm", "w+");   
+    final_out = fopen("output.asm", "w+");   
 
     /* yydebug = 1; */
     yyparse();
