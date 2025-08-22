@@ -268,3 +268,26 @@ sp——>	|	老SP			|  4字节
    例如：在output.asm中，mov  ebp, esp 和 sub  esp, 28 之间还要 push两个。
 
 ---
+
+### 8.21
+
+- 采用x86-32（cdecl）栈帧
+高地址  ─────────────────────────────────────────
+        [argN]             ; EBP+8+(N-1)*4
+        [arg2]             ; EBP+12
+        [arg1]             ; EBP+8
+        [return address]   ; EBP+4  (由 call 指令压入)
+EBP ->  [old EBP]          ; EBP+0  (我们 push 进去的)
+        [local_1]          ; EBP-4
+        [local_2]          ; EBP-8
+        ...
+ESP ->  [temps/spills]     ; 运行时计算栈顶（随 push/pop 变化） （计算栈）
+低地址  ─────────────────────────────────────────
+
+- 明日任务：1.分析出函数中局部变量所用的空间，然后 sub esp,VSize 2.尝试使用计算栈
+
+### 8.22
+
+- 分析出函数中局部变量所用的空间，然后 sub esp,VSize
+
+- 将要实现：调用一个函数的时候，将参数压入栈中，并且call。

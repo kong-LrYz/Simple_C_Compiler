@@ -183,7 +183,9 @@ int par_index = 0;                                  //the current function's las
 struct btab_struct btab[TABLE_NUM];
 int btab_count = 1;
 
-int var_point = 12;                                  //point variables's localation,unit:byte(8bits)
+int par_point = 8;                                  //参数偏移
+int loc_point = 0;                                  //局部变量偏移
+int var_point = 0;                                  //
 
 
 
@@ -206,7 +208,7 @@ int sp = 0;
 int yylex();
 void yyerror(const char *s);
 
-void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bool normal,int adr,int b_val,char c_val,double d_val,float f_val,int i_val,long l_val,short s_val,void* p_val,int ptr_level);
+void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bool normal,int b_val,char c_val,double d_val,float f_val,int i_val,long l_val,short s_val,void* p_val,int ptr_level);
 void Enter_Btab(int type[],int type_num,int basic_type,char* name,int lastpar,int last,int psize,int vsize);
 
 void Is_Valid_Declarator(char* name,int loop);
@@ -232,7 +234,7 @@ void yyerror(const char *s) {
     exit(0);
 }
 
-void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bool normal,int adr,int b_val,char c_val,double d_val,float f_val,int i_val,long l_val,short s_val,void* p_val,int ptr_level){
+void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bool normal,int b_val,char c_val,double d_val,float f_val,int i_val,long l_val,short s_val,void* p_val,int ptr_level){
     for(int i = 0;i < type_num;i++){
         nametab[nametab_count].type[i] = type[i];
     }
@@ -256,8 +258,14 @@ void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bo
 
     nametab[nametab_count].normal = normal;
 
-    nametab[nametab_count].adr = adr;
-    var_point += nametab[nametab_count].size;
+    if(normal == false){                                            //这是函数参数
+        nametab[nametab_count].adr = par_point;
+        par_point += nametab[nametab_count].size;
+    }else{                                                          //这是函数的局部变量  或者 全局变量
+        loc_point += nametab[nametab_count].size;
+        nametab[nametab_count].adr = -loc_point;
+    }
+
 
     nametab[nametab_count].link = last_index;
     last_index = nametab_count;
@@ -497,7 +505,10 @@ void Clear_current_type(){
 
 void Clear_After_Declaration(){
     last_index = 0;                             //the function or gobal var declaration is finished, set last_index = 0.
-    var_point = 12;                               //the function or gobal var declaration is finished, reset var_point.
+    
+    par_point = 8;                              //reset 参数偏移
+    loc_point = 0;                              //reset 局部变量 或者 全局变量
+
     par_index = 0;
 }
 
@@ -512,7 +523,7 @@ int popStack(){
 
 
 
-#line 516 "parser.c"
+#line 527 "parser.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -1118,29 +1129,29 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,   535,   535,   536,   540,   541,   545,   550,   554,   558,
-     564,   565,   569,   570,   576,   585,   589,   590,   591,   592,
-     595,   600,   601,   602,   607,   608,   612,   613,   614,   615,
-     616,   617,   618,   619,   620,   621,   626,   630,   633,   638,
-     650,   651,   655,   738,   748,   760,   769,   778,   782,   788,
-     799,   800,   804,   813,   817,   818,   819,   820,   821,   825,
-     826,   831,   840,   938,   950,   954,   966,   970,   982,   987,
-     991,  1003,  1007,  1019,  1020,  1024,  1037,  1043,  1055,  1059,
-    1071,  1075,  1087,  1091,  1103,  1107,  1119,  1123,  1135,  1136,
-    1140,  1152,  1153,  1154,  1155,  1159,  1171,  1172,  1176,  1188,
-    1403,  1616,  1628,  1735,  1942,  1946,  1958,  1959,  1963,  1975,
-    1979,  1991,  1992,  1993,  1994,  1995,  1996,  1997,  2001,  2013,
-    2014,  2015,  2016,  2017,  2018,  2019,  2020,  2021,  2025,  2037,
-    2049,  2056,  2061,  2066,  2071,  2075,  2080,  2088,  2096,  2104,
-    2112,  2116,  2121,  2129,  2137,  2143,  2147,  2153,  2163,  2167,
-    2168,  2169,  2170,  2171,  2172,  2175,  2178,  2183,  2187,  2188,
-    2194,  2195,  2196,  2197,  2198,  2199,  2200,  2201,  2202,  2203,
-    2204,  2208,  2209,  2212,  2216,  2220,  2221,  2226,  2237,  2241,
-    2242,  2246,  2247,  2251,  2252,  2253,  2254,  2255,  2256,  2257,
-    2258,  2263,  2264,  2265,  2270,  2271,  2275,  2276,  2277,  2281,
-    2282,  2283,  2288,  2289,  2290,  2291,  2292,  2293,  2294,  2298,
-    2299,  2306,  2307,  2308,  2309,  2310,  2311,  2315,  2319,  2323,
-    2324,  2327,  2332
+       0,   547,   547,   548,   552,   553,   557,   562,   566,   570,
+     576,   577,   581,   582,   588,   597,   601,   602,   603,   604,
+     607,   612,   613,   614,   619,   620,   624,   625,   626,   627,
+     628,   629,   630,   631,   632,   633,   638,   642,   645,   650,
+     662,   663,   667,   750,   760,   772,   781,   790,   794,   800,
+     811,   812,   816,   825,   829,   830,   831,   832,   833,   837,
+     838,   843,   852,   950,   962,   966,   978,   982,   994,   999,
+    1003,  1015,  1019,  1031,  1032,  1036,  1049,  1055,  1067,  1071,
+    1083,  1087,  1099,  1103,  1115,  1119,  1131,  1135,  1147,  1148,
+    1152,  1164,  1165,  1166,  1167,  1171,  1183,  1184,  1188,  1200,
+    1422,  1635,  1647,  1754,  1961,  1965,  1977,  1978,  1982,  1994,
+    1998,  2010,  2011,  2012,  2013,  2014,  2015,  2016,  2020,  2032,
+    2033,  2034,  2035,  2036,  2037,  2038,  2039,  2040,  2044,  2056,
+    2068,  2075,  2080,  2085,  2090,  2094,  2099,  2107,  2115,  2123,
+    2131,  2135,  2140,  2148,  2156,  2162,  2166,  2172,  2182,  2186,
+    2187,  2188,  2189,  2190,  2191,  2194,  2197,  2202,  2206,  2207,
+    2213,  2214,  2215,  2216,  2217,  2218,  2219,  2220,  2221,  2222,
+    2223,  2227,  2228,  2231,  2235,  2239,  2240,  2245,  2256,  2260,
+    2261,  2265,  2266,  2270,  2271,  2272,  2273,  2274,  2275,  2276,
+    2277,  2282,  2283,  2284,  2289,  2290,  2294,  2295,  2296,  2300,
+    2301,  2302,  2307,  2308,  2309,  2310,  2311,  2312,  2313,  2317,
+    2318,  2325,  2326,  2327,  2328,  2329,  2330,  2334,  2338,  2342,
+    2343,  2346,  2351
 };
 #endif
 
@@ -2220,31 +2231,31 @@ yyreduce:
   switch (yyn)
     {
   case 6: /* declaration: block-declaration  */
-#line 546 "parser.y"
+#line 558 "parser.y"
     {
         Clear_After_Declaration();
     }
-#line 2228 "parser.c"
+#line 2239 "parser.c"
     break;
 
   case 7: /* declaration: function-definition  */
-#line 551 "parser.y"
+#line 563 "parser.y"
     {
         Clear_After_Declaration();
     }
-#line 2236 "parser.c"
+#line 2247 "parser.c"
     break;
 
   case 11: /* simple-declaration: decl-specifier-seq init-declarator-list semicolon  */
-#line 566 "parser.y"
+#line 578 "parser.y"
     {
         Clear_current_type();                   //finish current type,need to be cleared.
     }
-#line 2244 "parser.c"
+#line 2255 "parser.c"
     break;
 
   case 14: /* decl-specifier-seq: decl-specifier  */
-#line 577 "parser.y"
+#line 589 "parser.y"
     {
         for(int i = 0;i < current_type_num;i++){
             (yyval.decl_specifier_seq).type[i] = current_type[i];
@@ -2253,77 +2264,77 @@ yyreduce:
 
         (yyval.decl_specifier_seq).basic_type = current_basic_type;
     }
-#line 2257 "parser.c"
+#line 2268 "parser.c"
     break;
 
   case 26: /* simple-type-specifier: charsym  */
-#line 612 "parser.y"
+#line 624 "parser.y"
                         {if((bitsmask & BIT_CHAR) == (1 << 3)){printf("uncorrect:char char\n");exit(1);}             current_type[current_type_num++] = symbol_char;     current_basic_type = symbol_char;       bitsmask |= BIT_CHAR;}
-#line 2263 "parser.c"
+#line 2274 "parser.c"
     break;
 
   case 27: /* simple-type-specifier: boolsym  */
-#line 613 "parser.y"
+#line 625 "parser.y"
                         {if((bitsmask & BIT_BOOL) == (1 << 0)){printf("uncorrect:bool bool\n");exit(1);}             current_type[current_type_num++] = symbol_bool;     current_basic_type = symbol_bool;       bitsmask |= BIT_BOOL;}
-#line 2269 "parser.c"
+#line 2280 "parser.c"
     break;
 
   case 28: /* simple-type-specifier: shortsym  */
-#line 614 "parser.y"
+#line 626 "parser.y"
                         {if((bitsmask & BIT_SHORT) == (1 << 7)){printf("uncorrect:short short\n");exit(1);}          current_type[current_type_num++] = symbol_short;                                            bitsmask |= BIT_SHORT;}
-#line 2275 "parser.c"
+#line 2286 "parser.c"
     break;
 
   case 29: /* simple-type-specifier: intsym  */
-#line 615 "parser.y"
+#line 627 "parser.y"
                         {if((bitsmask & BIT_INT) == (1 << 4)){printf("uncorrect:int int\n");exit(1);}                current_type[current_type_num++] = symbol_int;      current_basic_type = symbol_int;        bitsmask |= BIT_INT;}
-#line 2281 "parser.c"
+#line 2292 "parser.c"
     break;
 
   case 30: /* simple-type-specifier: longsym  */
-#line 616 "parser.y"
+#line 628 "parser.y"
                         {if((bitsmask & BIT_LONG) == (1 << 6)){printf("uncorrect:long long\n");exit(1);}             current_type[current_type_num++] = symbol_long;                                             bitsmask |= BIT_LONG;}
-#line 2287 "parser.c"
+#line 2298 "parser.c"
     break;
 
   case 31: /* simple-type-specifier: signedsym  */
-#line 617 "parser.y"
+#line 629 "parser.y"
                         {if((bitsmask & BIT_SIGNED) == (1 << 8)){printf("uncorrect:signed signed\n");exit(1);}      current_type[current_type_num++] = symbol_signed;                                           bitsmask |= BIT_SIGNED;}
-#line 2293 "parser.c"
+#line 2304 "parser.c"
     break;
 
   case 32: /* simple-type-specifier: unsignedsym  */
-#line 618 "parser.y"
+#line 630 "parser.y"
                         {if((bitsmask & BIT_UNSIGNED) == (1 << 9)){printf("uncorrect:unsigned unsigned\n");exit(1);} current_type[current_type_num++] = symbol_unsigned;                                         bitsmask |= BIT_UNSIGNED;}
-#line 2299 "parser.c"
+#line 2310 "parser.c"
     break;
 
   case 33: /* simple-type-specifier: floatsym  */
-#line 619 "parser.y"
+#line 631 "parser.y"
                         {if((bitsmask & BIT_FLOAT) == (1 << 1)){printf("uncorrect:float float\n");exit(1);}          current_type[current_type_num++] = symbol_float;    current_basic_type = symbol_float;      bitsmask |= BIT_FLOAT;}
-#line 2305 "parser.c"
+#line 2316 "parser.c"
     break;
 
   case 34: /* simple-type-specifier: doublesym  */
-#line 620 "parser.y"
+#line 632 "parser.y"
                         {if((bitsmask & BIT_DOUBLE) == (1 << 2)){printf("uncorrect:double double\n");exit(1);}       current_type[current_type_num++] = symbol_double;   current_basic_type = symbol_double;     bitsmask |= BIT_DOUBLE;}
-#line 2311 "parser.c"
+#line 2322 "parser.c"
     break;
 
   case 35: /* simple-type-specifier: voidsym  */
-#line 621 "parser.y"
+#line 633 "parser.y"
                         {if((bitsmask & BIT_VOID) == (1 << 5)){printf("uncorrect:void void\n");exit(1);}             current_type[current_type_num++] = symbol_void;     current_basic_type = symbol_void;       bitsmask |= BIT_VOID;}
-#line 2317 "parser.c"
+#line 2328 "parser.c"
     break;
 
   case 36: /* cv-qualifier: constsym  */
-#line 626 "parser.y"
+#line 638 "parser.y"
                         {if((bitsmask & BIT_CONST) == 1){printf("uncorrect:const const\n");exit(1);}          current_type[current_type_num++] = symbol_const;     bitsmask |= BIT_CONST;}
-#line 2323 "parser.c"
+#line 2334 "parser.c"
     break;
 
   case 42: /* init-declarator: declarator initializer  */
-#line 656 "parser.y"
+#line 668 "parser.y"
     {
         Is_Valid_Declarator((yyvsp[-1].sval).name,par_index);                     //compare declarator and current fucnction's par
         Is_Valid_Declarator((yyvsp[-1].sval).name,last_index);                //compare declarator and current fucnction's vars
@@ -2403,109 +2414,109 @@ yyreduce:
             (yyvsp[0].expr_attri).d_val = (double)(yyvsp[0].expr_attri).f_val;
         }
 
-            Enter_Nametab(current_type,current_type_num,current_basic_type,variable,(yyvsp[-1].sval).name,true,var_point,(yyvsp[0].expr_attri).b_val,(yyvsp[0].expr_attri).c_val,(yyvsp[0].expr_attri).d_val,(yyvsp[0].expr_attri).f_val,(yyvsp[0].expr_attri).i_val,(yyvsp[0].expr_attri).l_val,(yyvsp[0].expr_attri).s_val,(yyvsp[0].expr_attri).p_val,(yyvsp[-1].sval).ptr_level);            //Enter nametab
+            Enter_Nametab(current_type,current_type_num,current_basic_type,variable,(yyvsp[-1].sval).name,true,(yyvsp[0].expr_attri).b_val,(yyvsp[0].expr_attri).c_val,(yyvsp[0].expr_attri).d_val,(yyvsp[0].expr_attri).f_val,(yyvsp[0].expr_attri).i_val,(yyvsp[0].expr_attri).l_val,(yyvsp[0].expr_attri).s_val,(yyvsp[0].expr_attri).p_val,(yyvsp[-1].sval).ptr_level);            //Enter nametab
 
-    }
-#line 2410 "parser.c"
-    break;
-
-  case 43: /* init-declarator: declarator  */
-#line 739 "parser.y"
-    {
-        Is_Valid_Declarator((yyvsp[0].sval).name,par_index);                     //compare declarator and current fucnction's pars
-        Is_Valid_Declarator((yyvsp[0].sval).name,last_index);                //compare declarator and current fucnction's vars
-        
-        Enter_Nametab(current_type,current_type_num,current_basic_type,variable,(yyvsp[0].sval).name,true,var_point,0,0x00,0,0,0,0,0,NULL,(yyvsp[0].sval).ptr_level);            //Enter nametab
     }
 #line 2421 "parser.c"
     break;
 
+  case 43: /* init-declarator: declarator  */
+#line 751 "parser.y"
+    {
+        Is_Valid_Declarator((yyvsp[0].sval).name,par_index);                     //compare declarator and current fucnction's pars
+        Is_Valid_Declarator((yyvsp[0].sval).name,last_index);                //compare declarator and current fucnction's vars
+        
+        Enter_Nametab(current_type,current_type_num,current_basic_type,variable,(yyvsp[0].sval).name,true,0,0x00,0,0,0,0,0,NULL,(yyvsp[0].sval).ptr_level);            //Enter nametab
+    }
+#line 2432 "parser.c"
+    break;
+
   case 44: /* declarator: ptr-declarator  */
-#line 749 "parser.y"
+#line 761 "parser.y"
     {
         (yyval.sval).value = 0;
         (yyval.sval).ptr_level = (yyvsp[0].sval).ptr_level;
         (yyval.sval).name = (yyvsp[0].sval).name;
-        (yyval.sval).psize = (yyvsp[0].sval).psize;
+        // $$.psize = $1.psize;
 
         (yyval.sval).lastpar = (yyvsp[0].sval).lastpar;      //when declarator is function' name,lastpar has meaning.
     }
-#line 2434 "parser.c"
+#line 2445 "parser.c"
     break;
 
   case 45: /* ptr-declarator: noptr-declarator  */
-#line 761 "parser.y"
+#line 773 "parser.y"
     {
         (yyval.sval).value = 0;
         (yyval.sval).ptr_level = 0;
         (yyval.sval).name = (yyvsp[0].sval).name;
-        (yyval.sval).psize = (yyvsp[0].sval).psize;
+        // $$.psize = $1.psize;
 
         (yyval.sval).lastpar = (yyvsp[0].sval).lastpar;      //when declarator is function' name,lastpar has meaning.
     }
-#line 2447 "parser.c"
+#line 2458 "parser.c"
     break;
 
   case 46: /* ptr-declarator: ptr-operator ptr-declarator  */
-#line 770 "parser.y"
+#line 782 "parser.y"
     {
         (yyval.sval).value = 0;
         (yyval.sval).ptr_level = (yyvsp[0].sval).ptr_level + 1;
         (yyval.sval).name = (yyvsp[0].sval).name;
     }
-#line 2457 "parser.c"
+#line 2468 "parser.c"
     break;
 
   case 48: /* noptr-declarator: declarator-id  */
-#line 783 "parser.y"
+#line 795 "parser.y"
     {
         (yyval.sval).value = 0;
         (yyval.sval).ptr_level = 0;
         (yyval.sval).name = (yyvsp[0].sval).name;
     }
-#line 2467 "parser.c"
+#line 2478 "parser.c"
     break;
 
   case 49: /* noptr-declarator: declarator-id parameters-and-qualifiers  */
-#line 789 "parser.y"
+#line 801 "parser.y"
     {
         (yyval.sval).name = (yyvsp[-1].sval).name;
-        (yyval.sval).psize = var_point;
+
         (yyval.sval).lastpar = last_index;
 
         par_index = last_index;             //record current function's last parameter's index
         last_index = 0;                     //the function's parameter declaration is finished, set last_index = 0 
     
-        fetf_begin(&fe, final_out, (yyvsp[-1].sval).name, var_point);             //init emitter
+        fetf_begin(&fe, final_out, (yyvsp[-1].sval).name, 0);             //init emitter
     }
-#line 2482 "parser.c"
+#line 2493 "parser.c"
     break;
 
   case 52: /* declarator-id: id-expression  */
-#line 805 "parser.y"
+#line 817 "parser.y"
     {
         (yyval.sval).value = 0;
         (yyval.sval).ptr_level = 0;
         (yyval.sval).name = (yyvsp[0].sval).name;
     }
-#line 2492 "parser.c"
+#line 2503 "parser.c"
     break;
 
   case 61: /* parameter-declaration: decl-specifier-seq declarator  */
-#line 832 "parser.y"
+#line 844 "parser.y"
     {
         if(last_index != 0){
             Is_Valid_Declarator((yyvsp[0].sval).name,last_index); 
         }
-        Enter_Nametab((yyvsp[-1].decl_specifier_seq).type,(yyvsp[-1].decl_specifier_seq).type_num,(yyvsp[-1].decl_specifier_seq).basic_type,variable,(yyvsp[0].sval).name,false,var_point,0,0x00,0,0,0,0,0,NULL,(yyvsp[0].sval).ptr_level);
+        Enter_Nametab((yyvsp[-1].decl_specifier_seq).type,(yyvsp[-1].decl_specifier_seq).type_num,(yyvsp[-1].decl_specifier_seq).basic_type,variable,(yyvsp[0].sval).name,false,0,0x00,0,0,0,0,0,NULL,(yyvsp[0].sval).ptr_level);
         
         Clear_current_type();                   //finish current type,need to be cleared.
     }
-#line 2505 "parser.c"
+#line 2516 "parser.c"
     break;
 
   case 62: /* parameter-declaration: decl-specifier-seq declarator equal initializer-clause  */
-#line 841 "parser.y"
+#line 853 "parser.y"
     {
         if(last_index != 0){
             Is_Valid_Declarator((yyvsp[-2].sval).name,last_index); 
@@ -2587,15 +2598,15 @@ yyreduce:
             (yyvsp[0].expr_attri).d_val = (double)(yyvsp[0].expr_attri).f_val;
         }
 
-        Enter_Nametab((yyvsp[-3].decl_specifier_seq).type,(yyvsp[-3].decl_specifier_seq).type_num,(yyvsp[-3].decl_specifier_seq).basic_type,variable,(yyvsp[-2].sval).name,false,var_point,(yyvsp[0].expr_attri).b_val,(yyvsp[0].expr_attri).c_val,(yyvsp[0].expr_attri).d_val,(yyvsp[0].expr_attri).f_val,(yyvsp[0].expr_attri).i_val,(yyvsp[0].expr_attri).l_val,(yyvsp[0].expr_attri).s_val,(yyvsp[0].expr_attri).p_val,(yyvsp[-2].sval).ptr_level);
+        Enter_Nametab((yyvsp[-3].decl_specifier_seq).type,(yyvsp[-3].decl_specifier_seq).type_num,(yyvsp[-3].decl_specifier_seq).basic_type,variable,(yyvsp[-2].sval).name,false,(yyvsp[0].expr_attri).b_val,(yyvsp[0].expr_attri).c_val,(yyvsp[0].expr_attri).d_val,(yyvsp[0].expr_attri).f_val,(yyvsp[0].expr_attri).i_val,(yyvsp[0].expr_attri).l_val,(yyvsp[0].expr_attri).s_val,(yyvsp[0].expr_attri).p_val,(yyvsp[-2].sval).ptr_level);
     
         Clear_current_type();                   //finish current type,need to be cleared.
     }
-#line 2595 "parser.c"
+#line 2606 "parser.c"
     break;
 
   case 63: /* initializer: brace-or-equal-initializer  */
-#line 939 "parser.y"
+#line 951 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2607,11 +2618,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2611 "parser.c"
+#line 2622 "parser.c"
     break;
 
   case 65: /* brace-or-equal-initializer: equal initializer-clause  */
-#line 955 "parser.y"
+#line 967 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2623,11 +2634,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2627 "parser.c"
+#line 2638 "parser.c"
     break;
 
   case 67: /* initializer-clause: assignment-expression  */
-#line 971 "parser.y"
+#line 983 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2639,11 +2650,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2643 "parser.c"
+#line 2654 "parser.c"
     break;
 
   case 70: /* expression: assignment-expression  */
-#line 992 "parser.y"
+#line 1004 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2655,11 +2666,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2659 "parser.c"
+#line 2670 "parser.c"
     break;
 
   case 72: /* assignment-expression: conditional-expression  */
-#line 1008 "parser.y"
+#line 1020 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2671,11 +2682,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2675 "parser.c"
+#line 2686 "parser.c"
     break;
 
   case 75: /* conditional-expression: logical-or-expression  */
-#line 1025 "parser.y"
+#line 1037 "parser.y"
     {
 
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
@@ -2688,11 +2699,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2692 "parser.c"
+#line 2703 "parser.c"
     break;
 
   case 77: /* logical-or-expression: logical-and-expression  */
-#line 1044 "parser.y"
+#line 1056 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2704,11 +2715,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2708 "parser.c"
+#line 2719 "parser.c"
     break;
 
   case 79: /* logical-and-expression: inclusive-or-expression  */
-#line 1060 "parser.y"
+#line 1072 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2720,11 +2731,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2724 "parser.c"
+#line 2735 "parser.c"
     break;
 
   case 81: /* inclusive-or-expression: exclusive-or-expression  */
-#line 1076 "parser.y"
+#line 1088 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2736,11 +2747,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}        
     }
-#line 2740 "parser.c"
+#line 2751 "parser.c"
     break;
 
   case 83: /* exclusive-or-expression: and-expression  */
-#line 1092 "parser.y"
+#line 1104 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2752,11 +2763,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2756 "parser.c"
+#line 2767 "parser.c"
     break;
 
   case 85: /* and-expression: equality-expression  */
-#line 1108 "parser.y"
+#line 1120 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2768,11 +2779,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2772 "parser.c"
+#line 2783 "parser.c"
     break;
 
   case 87: /* equality-expression: relational-expression  */
-#line 1124 "parser.y"
+#line 1136 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2784,11 +2795,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2788 "parser.c"
+#line 2799 "parser.c"
     break;
 
   case 90: /* relational-expression: shift-expression  */
-#line 1141 "parser.y"
+#line 1153 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2800,11 +2811,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2804 "parser.c"
+#line 2815 "parser.c"
     break;
 
   case 95: /* shift-expression: additive-expression  */
-#line 1160 "parser.y"
+#line 1172 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2816,11 +2827,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2820 "parser.c"
+#line 2831 "parser.c"
     break;
 
   case 98: /* additive-expression: multiplicative-expression  */
-#line 1177 "parser.y"
+#line 1189 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -2832,230 +2843,237 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 2836 "parser.c"
+#line 2847 "parser.c"
     break;
 
   case 99: /* additive-expression: additive-expression plus multiplicative-expression  */
-#line 1189 "parser.y"
+#line 1201 "parser.y"
         {
-        if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_bool){
-            (yyval.expr_attri).type = symbol_bool;
-            (yyval.expr_attri).b_val = (yyvsp[-2].expr_attri).b_val + (yyvsp[0].expr_attri).b_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_char){
-            (yyval.expr_attri).type = symbol_int;
-            (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).b_val + (int)(yyvsp[0].expr_attri).c_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_double){
-            (yyval.expr_attri).type = symbol_double;
-            (yyval.expr_attri).d_val = (double)(yyvsp[-2].expr_attri).b_val + (yyvsp[0].expr_attri).d_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_float){
-            (yyval.expr_attri).type = symbol_float;
-            (yyval.expr_attri).f_val = (float)(yyvsp[-2].expr_attri).b_val + (yyvsp[0].expr_attri).f_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_int){
-            (yyval.expr_attri).type = symbol_int;
-            (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).b_val + (yyvsp[0].expr_attri).i_val;
-        }
-        // else if($1.type == symbol_bool && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = (long)$1.b_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_bool && $3.type == symbol_short){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.b_val + (int)$3.s_val;
-        // }
-        else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_point){
-            (yyval.expr_attri).type = symbol_int;
-            (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).b_val + (int)(yyvsp[0].expr_attri).s_val;
-        }
+
+        if((yyvsp[-2].expr_attri).kind == variable || (yyvsp[0].expr_attri).kind == variable){                             //need generate code
+
+        }else{                                                                      //constant folding
+            if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_bool){
+                (yyval.expr_attri).type = symbol_bool;
+                (yyval.expr_attri).b_val = (yyvsp[-2].expr_attri).b_val + (yyvsp[0].expr_attri).b_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_char){
+                (yyval.expr_attri).type = symbol_int;
+                (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).b_val + (int)(yyvsp[0].expr_attri).c_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_double){
+                (yyval.expr_attri).type = symbol_double;
+                (yyval.expr_attri).d_val = (double)(yyvsp[-2].expr_attri).b_val + (yyvsp[0].expr_attri).d_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_float){
+                (yyval.expr_attri).type = symbol_float;
+                (yyval.expr_attri).f_val = (float)(yyvsp[-2].expr_attri).b_val + (yyvsp[0].expr_attri).f_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_int){
+                (yyval.expr_attri).type = symbol_int;
+                (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).b_val + (yyvsp[0].expr_attri).i_val;
+            }
+            // else if($1.type == symbol_bool && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = (long)$1.b_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_bool && $3.type == symbol_short){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.b_val + (int)$3.s_val;
+            // }
+            else if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_point){
+                (yyval.expr_attri).type = symbol_int;
+                (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).b_val + (int)(yyvsp[0].expr_attri).s_val;
+            }
         
 
-        else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_bool){
-            (yyval.expr_attri).type = symbol_int;
-            (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).c_val + (yyvsp[0].expr_attri).b_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_char){
-            (yyval.expr_attri).type = symbol_int;
-            (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).c_val + (int)(yyvsp[0].expr_attri).c_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_double){
-            (yyval.expr_attri).type = symbol_double;
-            (yyval.expr_attri).d_val = (double)(yyvsp[-2].expr_attri).c_val + (yyvsp[0].expr_attri).d_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_float){
-            (yyval.expr_attri).type = symbol_float;
-            (yyval.expr_attri).f_val = (float)(yyvsp[-2].expr_attri).c_val + (yyvsp[0].expr_attri).f_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_int){
-            (yyval.expr_attri).type = symbol_int;
-            (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).c_val + (yyvsp[0].expr_attri).i_val;
-        }
-        // else if($1.type == symbol_char && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = (long)$1.c_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_char && $3.type == symbol_short){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.c_val + (int)$3.s_val;
-        // }
+            else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_bool){
+                (yyval.expr_attri).type = symbol_int;
+                (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).c_val + (yyvsp[0].expr_attri).b_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_char){
+                (yyval.expr_attri).type = symbol_int;
+                (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).c_val + (int)(yyvsp[0].expr_attri).c_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_double){
+                (yyval.expr_attri).type = symbol_double;
+                (yyval.expr_attri).d_val = (double)(yyvsp[-2].expr_attri).c_val + (yyvsp[0].expr_attri).d_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_float){
+                (yyval.expr_attri).type = symbol_float;
+                (yyval.expr_attri).f_val = (float)(yyvsp[-2].expr_attri).c_val + (yyvsp[0].expr_attri).f_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_char && (yyvsp[0].expr_attri).type == symbol_int){
+                (yyval.expr_attri).type = symbol_int;
+                (yyval.expr_attri).i_val = (int)(yyvsp[-2].expr_attri).c_val + (yyvsp[0].expr_attri).i_val;
+            }
+            // else if($1.type == symbol_char && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = (long)$1.c_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_char && $3.type == symbol_short){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.c_val + (int)$3.s_val;
+            // }
 
 
-        else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_bool){
-            (yyval.expr_attri).type = symbol_double;
-            (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (double)(yyvsp[0].expr_attri).b_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_char){
-            (yyval.expr_attri).type = symbol_double;
-            (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (double)(yyvsp[0].expr_attri).c_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_double){
-            (yyval.expr_attri).type = symbol_double;
-            (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (yyvsp[0].expr_attri).d_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_float){
-            (yyval.expr_attri).type = symbol_double;
-            (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (double)(yyvsp[0].expr_attri).f_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_int){
-            (yyval.expr_attri).type = symbol_double;
-            (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (double)(yyvsp[0].expr_attri).i_val;
-        }
-        // else if($1.type == symbol_double && $3.type == symbol_long){
-        //     $$.type = symbol_double;
-        //     $$.d_val = $1.d_val + (double)$3.l_val;
-        // }
-        // else if($1.type == symbol_double && $3.type == symbol_short){
-        //     $$.type = symbol_double;
-        //     $$.d_val = $1.d_val + (double)$3.s_val;
-        // }
+            else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_bool){
+                (yyval.expr_attri).type = symbol_double;
+                (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (double)(yyvsp[0].expr_attri).b_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_char){
+                (yyval.expr_attri).type = symbol_double;
+                (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (double)(yyvsp[0].expr_attri).c_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_double){
+                (yyval.expr_attri).type = symbol_double;
+                (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (yyvsp[0].expr_attri).d_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_float){
+                (yyval.expr_attri).type = symbol_double;
+                (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (double)(yyvsp[0].expr_attri).f_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_double && (yyvsp[0].expr_attri).type == symbol_int){
+                (yyval.expr_attri).type = symbol_double;
+                (yyval.expr_attri).d_val = (yyvsp[-2].expr_attri).d_val + (double)(yyvsp[0].expr_attri).i_val;
+            }
+            // else if($1.type == symbol_double && $3.type == symbol_long){
+            //     $$.type = symbol_double;
+            //     $$.d_val = $1.d_val + (double)$3.l_val;
+            // }
+            // else if($1.type == symbol_double && $3.type == symbol_short){
+            //     $$.type = symbol_double;
+            //     $$.d_val = $1.d_val + (double)$3.s_val;
+            // }
 
 
-        else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_bool){
-            (yyval.expr_attri).type = symbol_float;
-            (yyval.expr_attri).f_val = (yyvsp[-2].expr_attri).f_val + (float)(yyvsp[0].expr_attri).b_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_char){
-            (yyval.expr_attri).type = symbol_float;
-            (yyval.expr_attri).f_val = (yyvsp[-2].expr_attri).f_val + (float)(yyvsp[0].expr_attri).c_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_double){
-            (yyval.expr_attri).type = symbol_double;
-            (yyval.expr_attri).d_val = (double)(yyvsp[-2].expr_attri).f_val + (yyvsp[0].expr_attri).d_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_float){
-            (yyval.expr_attri).type = symbol_float;
-            (yyval.expr_attri).f_val = (yyvsp[-2].expr_attri).f_val + (yyvsp[0].expr_attri).f_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_int){
-            (yyval.expr_attri).type = symbol_float;
-            (yyval.expr_attri).f_val = (yyvsp[-2].expr_attri).f_val + (float)(yyvsp[0].expr_attri).i_val;
-        }
-        // else if($1.type == symbol_float && $3.type == symbol_long){
-        //     $$.type = symbol_float;
-        //     $$.f_val = $1.f_val + (float)$3.l_val;
-        // }
-        // else if($1.type == symbol_float && $3.type == symbol_short){
-        //     $$.type = symbol_float;
-        //     $$.f_val = $1.f_val + (float)$3.s_val;
-        // }
+            else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_bool){
+                (yyval.expr_attri).type = symbol_float;
+                (yyval.expr_attri).f_val = (yyvsp[-2].expr_attri).f_val + (float)(yyvsp[0].expr_attri).b_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_char){
+                (yyval.expr_attri).type = symbol_float;
+                (yyval.expr_attri).f_val = (yyvsp[-2].expr_attri).f_val + (float)(yyvsp[0].expr_attri).c_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_double){
+                (yyval.expr_attri).type = symbol_double;
+                (yyval.expr_attri).d_val = (double)(yyvsp[-2].expr_attri).f_val + (yyvsp[0].expr_attri).d_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_float){
+                (yyval.expr_attri).type = symbol_float;
+                (yyval.expr_attri).f_val = (yyvsp[-2].expr_attri).f_val + (yyvsp[0].expr_attri).f_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_float && (yyvsp[0].expr_attri).type == symbol_int){
+                (yyval.expr_attri).type = symbol_float;
+                (yyval.expr_attri).f_val = (yyvsp[-2].expr_attri).f_val + (float)(yyvsp[0].expr_attri).i_val;
+            }
+            // else if($1.type == symbol_float && $3.type == symbol_long){
+            //     $$.type = symbol_float;
+            //     $$.f_val = $1.f_val + (float)$3.l_val;
+            // }
+            // else if($1.type == symbol_float && $3.type == symbol_short){
+            //     $$.type = symbol_float;
+            //     $$.f_val = $1.f_val + (float)$3.s_val;
+            // }
 
 
-        else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_bool){
-            (yyval.expr_attri).type = symbol_int;
-            (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).i_val + (yyvsp[0].expr_attri).b_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_char){
-            (yyval.expr_attri).type = symbol_int;
-            (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).i_val + (int)(yyvsp[0].expr_attri).c_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_double){
-            (yyval.expr_attri).type = symbol_double;
-            (yyval.expr_attri).d_val = (double)(yyvsp[-2].expr_attri).i_val + (yyvsp[0].expr_attri).d_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_float){
-            (yyval.expr_attri).type = symbol_float;
-            (yyval.expr_attri).f_val = (float)(yyvsp[-2].expr_attri).i_val + (yyvsp[0].expr_attri).f_val;
-        }
-        else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_int){
-            (yyval.expr_attri).type = symbol_int;
-            (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).i_val + (yyvsp[0].expr_attri).i_val;
-        }
-        // else if($1.type == symbol_int && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = (long)$1.i_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_int && $3.type == symbol_short){
-        //     $$.type = symbol_int;
-        //     $$.i_val = $1.i_val + (int)$3.s_val;
-        // }
+            else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_bool){
+                (yyval.expr_attri).type = symbol_int;
+                (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).i_val + (yyvsp[0].expr_attri).b_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_char){
+                (yyval.expr_attri).type = symbol_int;
+                (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).i_val + (int)(yyvsp[0].expr_attri).c_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_double){
+                (yyval.expr_attri).type = symbol_double;
+                (yyval.expr_attri).d_val = (double)(yyvsp[-2].expr_attri).i_val + (yyvsp[0].expr_attri).d_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_float){
+                (yyval.expr_attri).type = symbol_float;
+                (yyval.expr_attri).f_val = (float)(yyvsp[-2].expr_attri).i_val + (yyvsp[0].expr_attri).f_val;
+            }
+            else if((yyvsp[-2].expr_attri).type == symbol_int && (yyvsp[0].expr_attri).type == symbol_int){
+                (yyval.expr_attri).type = symbol_int;
+                (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).i_val + (yyvsp[0].expr_attri).i_val;
+            }
+            // else if($1.type == symbol_int && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = (long)$1.i_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_int && $3.type == symbol_short){
+            //     $$.type = symbol_int;
+            //     $$.i_val = $1.i_val + (int)$3.s_val;
+            // }
 
 
-        // else if($1.type == symbol_long && $3.type == symbol_bool){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + (long)$3.b_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_char){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + (long)$3.c_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_double){
-        //     $$.type = symbol_double;
-        //     $$.d_val = (double)$1.l_val + $3.d_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_float){
-        //     $$.type = symbol_float;
-        //     $$.f_val = (float)$1.l_val + $3.f_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_int){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + (long)$3.i_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_short){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + (long)$3.s_val;
-        // }
+            // else if($1.type == symbol_long && $3.type == symbol_bool){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + (long)$3.b_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_char){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + (long)$3.c_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_double){
+            //     $$.type = symbol_double;
+            //     $$.d_val = (double)$1.l_val + $3.d_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_float){
+            //     $$.type = symbol_float;
+            //     $$.f_val = (float)$1.l_val + $3.f_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_int){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + (long)$3.i_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_short){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + (long)$3.s_val;
+            // }
 
 
-        // else if($1.type == symbol_short && $3.type == symbol_bool){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.s_val + $3.b_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_char){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.s_val + (int)$3.c_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_double){
-        //     $$.type = symbol_double;
-        //     $$.d_val = (double)$1.s_val + $3.d_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_float){
-        //     $$.type = symbol_float;
-        //     $$.f_val = (float)$1.s_val + $3.f_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_int){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.s_val + $3.i_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = (long)$1.s_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_short){
-        //     $$.type = symbol_short;
-        //     $$.s_val = $1.s_val + $3.s_val;
-        // }
+            // else if($1.type == symbol_short && $3.type == symbol_bool){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.s_val + $3.b_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_char){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.s_val + (int)$3.c_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_double){
+            //     $$.type = symbol_double;
+            //     $$.d_val = (double)$1.s_val + $3.d_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_float){
+            //     $$.type = symbol_float;
+            //     $$.f_val = (float)$1.s_val + $3.f_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_int){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.s_val + $3.i_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = (long)$1.s_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_short){
+            //     $$.type = symbol_short;
+            //     $$.s_val = $1.s_val + $3.s_val;
+            // }
+        }
+
+        
     }
-#line 3055 "parser.c"
+#line 3073 "parser.c"
     break;
 
   case 100: /* additive-expression: additive-expression minus multiplicative-expression  */
-#line 1404 "parser.y"
+#line 1423 "parser.y"
     {
         if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_bool){
             (yyval.expr_attri).type = symbol_bool;
@@ -3265,11 +3283,11 @@ yyreduce:
         //     $$.s_val = $1.s_val - $3.s_val;
         // }
     }
-#line 3269 "parser.c"
+#line 3287 "parser.c"
     break;
 
   case 101: /* multiplicative-expression: pm-expression  */
-#line 1617 "parser.y"
+#line 1636 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -3281,11 +3299,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}   
     }
-#line 3285 "parser.c"
+#line 3303 "parser.c"
     break;
 
   case 102: /* multiplicative-expression: multiplicative-expression star pm-expression  */
-#line 1629 "parser.y"
+#line 1648 "parser.y"
     {
         if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_bool){
             (yyval.expr_attri).type = symbol_int;
@@ -3392,11 +3410,11 @@ yyreduce:
             (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).i_val * (yyvsp[0].expr_attri).i_val;
         }
     }
-#line 3396 "parser.c"
+#line 3414 "parser.c"
     break;
 
   case 103: /* multiplicative-expression: multiplicative-expression slash pm-expression  */
-#line 1736 "parser.y"
+#line 1755 "parser.y"
     {
         if((yyvsp[-2].expr_attri).type == symbol_bool && (yyvsp[0].expr_attri).type == symbol_bool){
             if((yyvsp[0].expr_attri).b_val == 0){
@@ -3603,11 +3621,11 @@ yyreduce:
             (yyval.expr_attri).i_val = (yyvsp[-2].expr_attri).i_val / (yyvsp[0].expr_attri).i_val;
         }
     }
-#line 3607 "parser.c"
+#line 3625 "parser.c"
     break;
 
   case 105: /* pm-expression: cast-expression  */
-#line 1947 "parser.y"
+#line 1966 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -3619,11 +3637,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 3623 "parser.c"
+#line 3641 "parser.c"
     break;
 
   case 108: /* cast-expression: unary-expression  */
-#line 1964 "parser.y"
+#line 1983 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -3635,11 +3653,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 3639 "parser.c"
+#line 3657 "parser.c"
     break;
 
   case 110: /* unary-expression: postfix-expression  */
-#line 1980 "parser.y"
+#line 1999 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -3651,11 +3669,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 3655 "parser.c"
+#line 3673 "parser.c"
     break;
 
   case 118: /* postfix-expression: primary-expression  */
-#line 2002 "parser.y"
+#line 2021 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -3667,11 +3685,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 3671 "parser.c"
+#line 3689 "parser.c"
     break;
 
   case 128: /* primary-expression: literal  */
-#line 2026 "parser.y"
+#line 2045 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;
@@ -3683,11 +3701,11 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[0].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[0].expr_attri).size;}
     }
-#line 3687 "parser.c"
+#line 3705 "parser.c"
     break;
 
   case 129: /* primary-expression: left_paren expression right_paren  */
-#line 2038 "parser.y"
+#line 2057 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[-1].expr_attri).type;
         if((yyval.expr_attri).type == symbol_bool) (yyval.expr_attri).b_val = (yyvsp[-1].expr_attri).b_val;
@@ -3699,168 +3717,168 @@ yyreduce:
         else if((yyval.expr_attri).type == symbol_short) (yyval.expr_attri).s_val = (yyvsp[-1].expr_attri).s_val;
         else if((yyval.expr_attri).type == symbol_point) {(yyval.expr_attri).p_val = (yyvsp[-1].expr_attri).p_val; (yyval.expr_attri).size = (yyvsp[-1].expr_attri).size;}
     }
-#line 3703 "parser.c"
+#line 3721 "parser.c"
     break;
 
   case 130: /* primary-expression: id-expression  */
-#line 2050 "parser.y"
+#line 2069 "parser.y"
     {
         
-    }
-#line 3711 "parser.c"
-    break;
-
-  case 131: /* literal: integer-literal  */
-#line 2057 "parser.y"
-    {
-        (yyval.expr_attri).type = (yyvsp[0].expr_attri).type; 
-        (yyval.expr_attri).i_val = (yyvsp[0].expr_attri).i_val;
-    }
-#line 3720 "parser.c"
-    break;
-
-  case 132: /* literal: character-literal  */
-#line 2062 "parser.y"
-    {
-        (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
-        (yyval.expr_attri).c_val = (yyvsp[0].expr_attri).c_val;
     }
 #line 3729 "parser.c"
     break;
 
-  case 133: /* literal: floating-literal  */
-#line 2067 "parser.y"
+  case 131: /* literal: integer-literal  */
+#line 2076 "parser.y"
     {
-        (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
-        (yyval.expr_attri).f_val = (yyvsp[0].expr_attri).f_val;
+        (yyval.expr_attri).type = (yyvsp[0].expr_attri).type; 
+        (yyval.expr_attri).i_val = (yyvsp[0].expr_attri).i_val;
     }
 #line 3738 "parser.c"
     break;
 
-  case 134: /* literal: string-literal  */
-#line 2072 "parser.y"
-    {
-
-    }
-#line 3746 "parser.c"
-    break;
-
-  case 135: /* literal: boolean-literal  */
-#line 2076 "parser.y"
-    {
-        (yyval.expr_attri).type = (yyvsp[0].expr_attri).type; 
-        (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;   
-    }
-#line 3755 "parser.c"
-    break;
-
-  case 136: /* literal: pointer-literal  */
+  case 132: /* literal: character-literal  */
 #line 2081 "parser.y"
     {
         (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
-        (yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val;
+        (yyval.expr_attri).c_val = (yyvsp[0].expr_attri).c_val;
+    }
+#line 3747 "parser.c"
+    break;
+
+  case 133: /* literal: floating-literal  */
+#line 2086 "parser.y"
+    {
+        (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
+        (yyval.expr_attri).f_val = (yyvsp[0].expr_attri).f_val;
+    }
+#line 3756 "parser.c"
+    break;
+
+  case 134: /* literal: string-literal  */
+#line 2091 "parser.y"
+    {
+
     }
 #line 3764 "parser.c"
     break;
 
-  case 137: /* integer-literal: int_number  */
-#line 2089 "parser.y"
+  case 135: /* literal: boolean-literal  */
+#line 2095 "parser.y"
     {
-        (yyval.expr_attri).type = symbol_int; 
-        (yyval.expr_attri).i_val = (yyvsp[0].ival);
+        (yyval.expr_attri).type = (yyvsp[0].expr_attri).type; 
+        (yyval.expr_attri).b_val = (yyvsp[0].expr_attri).b_val;   
     }
 #line 3773 "parser.c"
     break;
 
-  case 138: /* character-literal: single_quote one_char single_quote  */
-#line 2097 "parser.y"
+  case 136: /* literal: pointer-literal  */
+#line 2100 "parser.y"
     {
-        (yyval.expr_attri).type = symbol_char; 
-        (yyval.expr_attri).c_val = (yyvsp[-1].sval).name[0];
+        (yyval.expr_attri).type = (yyvsp[0].expr_attri).type;
+        (yyval.expr_attri).p_val = (yyvsp[0].expr_attri).p_val;
     }
 #line 3782 "parser.c"
     break;
 
-  case 139: /* floating-literal: float_number  */
-#line 2105 "parser.y"
+  case 137: /* integer-literal: int_number  */
+#line 2108 "parser.y"
     {
-        (yyval.expr_attri).type = symbol_float; 
-        (yyval.expr_attri).f_val = (yyvsp[0].fval);
+        (yyval.expr_attri).type = symbol_int; 
+        (yyval.expr_attri).i_val = (yyvsp[0].ival);
     }
 #line 3791 "parser.c"
     break;
 
-  case 141: /* boolean-literal: truesym  */
-#line 2117 "parser.y"
+  case 138: /* character-literal: single_quote one_char single_quote  */
+#line 2116 "parser.y"
     {
-        (yyval.expr_attri).type = symbol_bool; 
-        (yyval.expr_attri).b_val = 1;
+        (yyval.expr_attri).type = symbol_char; 
+        (yyval.expr_attri).c_val = (yyvsp[-1].sval).name[0];
     }
 #line 3800 "parser.c"
     break;
 
-  case 142: /* boolean-literal: falsesym  */
-#line 2122 "parser.y"
+  case 139: /* floating-literal: float_number  */
+#line 2124 "parser.y"
     {
-        (yyval.expr_attri).type = symbol_bool; 
-        (yyval.expr_attri).b_val = 0;
+        (yyval.expr_attri).type = symbol_float; 
+        (yyval.expr_attri).f_val = (yyvsp[0].fval);
     }
 #line 3809 "parser.c"
     break;
 
-  case 143: /* pointer-literal: nullptr  */
-#line 2130 "parser.y"
+  case 141: /* boolean-literal: truesym  */
+#line 2136 "parser.y"
     {
-        (yyval.expr_attri).type = symbol_point;
-        (yyval.expr_attri).p_val = NULL;
+        (yyval.expr_attri).type = symbol_bool; 
+        (yyval.expr_attri).b_val = 1;
     }
 #line 3818 "parser.c"
     break;
 
+  case 142: /* boolean-literal: falsesym  */
+#line 2141 "parser.y"
+    {
+        (yyval.expr_attri).type = symbol_bool; 
+        (yyval.expr_attri).b_val = 0;
+    }
+#line 3827 "parser.c"
+    break;
+
+  case 143: /* pointer-literal: nullptr  */
+#line 2149 "parser.y"
+    {
+        (yyval.expr_attri).type = symbol_point;
+        (yyval.expr_attri).p_val = NULL;
+    }
+#line 3836 "parser.c"
+    break;
+
   case 144: /* id-expression: unqualified-id  */
-#line 2138 "parser.y"
+#line 2157 "parser.y"
     {
         (yyval.sval).value = 0;
         (yyval.sval).ptr_level = 0;
         (yyval.sval).name = (yyvsp[0].sval).name;
     }
-#line 3828 "parser.c"
+#line 3846 "parser.c"
     break;
 
   case 146: /* unqualified-id: identifier  */
-#line 2148 "parser.y"
+#line 2167 "parser.y"
     {
         (yyval.sval).value = 0;
         (yyval.sval).ptr_level = 0;
         (yyval.sval).name = (yyvsp[0].sval).name;
     }
-#line 3838 "parser.c"
+#line 3856 "parser.c"
     break;
 
   case 147: /* unqualified-id: one_char  */
-#line 2154 "parser.y"
+#line 2173 "parser.y"
     {
         (yyval.sval).value = 0;
         (yyval.sval).ptr_level = 0;
         (yyval.sval).name = (yyvsp[0].sval).name;
     }
-#line 3848 "parser.c"
+#line 3866 "parser.c"
     break;
 
   case 177: /* function-definition: decl-specifier-seq declarator function-body  */
-#line 2227 "parser.y"
+#line 2246 "parser.y"
     {  
         Is_Valid_Function((yyvsp[-1].sval).name);
-        Enter_Btab((yyvsp[-2].decl_specifier_seq).type,(yyvsp[-2].decl_specifier_seq).type_num,(yyvsp[-2].decl_specifier_seq).basic_type,(yyvsp[-1].sval).name,(yyvsp[-1].sval).lastpar,last_index,(yyvsp[-1].sval).psize,var_point);      //enter btab;
+        Enter_Btab((yyvsp[-2].decl_specifier_seq).type,(yyvsp[-2].decl_specifier_seq).type_num,(yyvsp[-2].decl_specifier_seq).basic_type,(yyvsp[-1].sval).name,(yyvsp[-1].sval).lastpar,last_index,par_point - 8,par_point - 8 + loc_point);      //enter btab;
 
-        fetf_fix_locals(&fe,var_point);                     //set real VSize
+        fetf_fix_locals(&fe,loc_point);                     //set real VSize
         fetf_end(&fe);                                      //insert prologue
     }
-#line 3860 "parser.c"
+#line 3878 "parser.c"
     break;
 
 
-#line 3864 "parser.c"
+#line 3882 "parser.c"
 
       default: break;
     }
@@ -4053,7 +4071,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 2335 "parser.y"
+#line 2354 "parser.y"
 
 extern int yydebug;
 

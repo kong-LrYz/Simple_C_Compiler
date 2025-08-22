@@ -18,12 +18,7 @@ typedef struct {
     int uid;
 } FuncEmitterTF;
 
-static inline int align4(int n){ return (n + 3) & ~3; }
-static inline int locals_from_vsize(int vsize){
-    int raw = vsize - 12;
-    if (raw < 0) raw = 0;
-    return align4(raw);
-}
+
 
 // 你可以用一个全局计数器确保标签唯一
 static int g_func_uid = 0;
@@ -33,7 +28,7 @@ static inline void fetf_begin(FuncEmitterTF *fe, FILE *final_out,
     memset(fe, 0, sizeof(*fe));
     fe->out       = final_out;
     fe->func_name = name;
-    fe->locals    = locals_from_vsize(vsize_guess);
+    fe->locals    = vsize_guess;
     fe->uid       = ++g_func_uid;
 
     fe->body = tmpfile();
@@ -80,7 +75,7 @@ static inline void fetf_end(FuncEmitterTF *fe) {
 
 // 在 function-definition 结束时发现真实 vsize，再设置一次
 static inline void fetf_fix_locals(FuncEmitterTF *fe, int vsize_real) {
-    fe->locals = locals_from_vsize(vsize_real);
+    fe->locals = vsize_real;
 }
 
 #endif // EMITTER_TMPFILE_H

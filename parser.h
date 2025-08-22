@@ -156,7 +156,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 447 "parser.y"
+#line 458 "parser.y"
 
     int ival;
     float fval;
@@ -165,13 +165,14 @@ union YYSTYPE
         char* name;
         int ptr_level;
         int lastpar;                        //for function,record the last parameter's addr
-        int psize;                          //for function,record all parameters's size
+        // int psize;                          //for function,record all parameters's size
 
     }sval;
 
 
     struct {
         int type;
+        int kind;                       //constant or variable
         union {
             int b_val;                  //bool
             char c_val;
@@ -193,7 +194,7 @@ union YYSTYPE
 
 
 
-#line 197 "parser.h"
+#line 198 "parser.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

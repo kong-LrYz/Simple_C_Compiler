@@ -113,7 +113,9 @@ int par_index = 0;                                  //the current function's las
 struct btab_struct btab[TABLE_NUM];
 int btab_count = 1;
 
-int var_point = 12;                                  //point variables's localation,unit:byte(8bits)
+int par_point = 8;                                  //参数偏移
+int loc_point = 0;                                  //局部变量偏移
+int var_point = 0;                                  //
 
 
 
@@ -136,7 +138,7 @@ int sp = 0;
 int yylex();
 void yyerror(const char *s);
 
-void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bool normal,int adr,int b_val,char c_val,double d_val,float f_val,int i_val,long l_val,short s_val,void* p_val,int ptr_level);
+void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bool normal,int b_val,char c_val,double d_val,float f_val,int i_val,long l_val,short s_val,void* p_val,int ptr_level);
 void Enter_Btab(int type[],int type_num,int basic_type,char* name,int lastpar,int last,int psize,int vsize);
 
 void Is_Valid_Declarator(char* name,int loop);
@@ -162,7 +164,7 @@ void yyerror(const char *s) {
     exit(0);
 }
 
-void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bool normal,int adr,int b_val,char c_val,double d_val,float f_val,int i_val,long l_val,short s_val,void* p_val,int ptr_level){
+void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bool normal,int b_val,char c_val,double d_val,float f_val,int i_val,long l_val,short s_val,void* p_val,int ptr_level){
     for(int i = 0;i < type_num;i++){
         nametab[nametab_count].type[i] = type[i];
     }
@@ -186,8 +188,14 @@ void Enter_Nametab(int type[],int type_num,int basic_type,int kind,char* name,bo
 
     nametab[nametab_count].normal = normal;
 
-    nametab[nametab_count].adr = adr;
-    var_point += nametab[nametab_count].size;
+    if(normal == false){                                            //这是函数参数
+        nametab[nametab_count].adr = par_point;
+        par_point += nametab[nametab_count].size;
+    }else{                                                          //这是函数的局部变量  或者 全局变量
+        loc_point += nametab[nametab_count].size;
+        nametab[nametab_count].adr = -loc_point;
+    }
+
 
     nametab[nametab_count].link = last_index;
     last_index = nametab_count;
@@ -427,7 +435,10 @@ void Clear_current_type(){
 
 void Clear_After_Declaration(){
     last_index = 0;                             //the function or gobal var declaration is finished, set last_index = 0.
-    var_point = 12;                               //the function or gobal var declaration is finished, reset var_point.
+    
+    par_point = 8;                              //reset 参数偏移
+    loc_point = 0;                              //reset 局部变量 或者 全局变量
+
     par_index = 0;
 }
 
@@ -452,13 +463,14 @@ int popStack(){
         char* name;
         int ptr_level;
         int lastpar;                        //for function,record the last parameter's addr
-        int psize;                          //for function,record all parameters's size
+        // int psize;                          //for function,record all parameters's size
 
     }sval;
 
 
     struct {
         int type;
+        int kind;                       //constant or variable
         union {
             int b_val;                  //bool
             char c_val;
@@ -732,7 +744,7 @@ init-declarator:                    //have initializer or not
             $2.d_val = (double)$2.f_val;
         }
 
-            Enter_Nametab(current_type,current_type_num,current_basic_type,variable,$1.name,true,var_point,$2.b_val,$2.c_val,$2.d_val,$2.f_val,$2.i_val,$2.l_val,$2.s_val,$2.p_val,$1.ptr_level);            //Enter nametab
+            Enter_Nametab(current_type,current_type_num,current_basic_type,variable,$1.name,true,$2.b_val,$2.c_val,$2.d_val,$2.f_val,$2.i_val,$2.l_val,$2.s_val,$2.p_val,$1.ptr_level);            //Enter nametab
 
     }
     |declarator
@@ -740,7 +752,7 @@ init-declarator:                    //have initializer or not
         Is_Valid_Declarator($1.name,par_index);                     //compare declarator and current fucnction's pars
         Is_Valid_Declarator($1.name,last_index);                //compare declarator and current fucnction's vars
         
-        Enter_Nametab(current_type,current_type_num,current_basic_type,variable,$1.name,true,var_point,0,0x00,0,0,0,0,0,NULL,$1.ptr_level);            //Enter nametab
+        Enter_Nametab(current_type,current_type_num,current_basic_type,variable,$1.name,true,0,0x00,0,0,0,0,0,NULL,$1.ptr_level);            //Enter nametab
     }
     ;
 
@@ -750,7 +762,7 @@ declarator:
         $$.value = 0;
         $$.ptr_level = $1.ptr_level;
         $$.name = $1.name;
-        $$.psize = $1.psize;
+        // $$.psize = $1.psize;
 
         $$.lastpar = $1.lastpar;      //when declarator is function' name,lastpar has meaning.
     }
@@ -762,7 +774,7 @@ ptr-declarator:
         $$.value = 0;
         $$.ptr_level = 0;
         $$.name = $1.name;
-        $$.psize = $1.psize;
+        // $$.psize = $1.psize;
 
         $$.lastpar = $1.lastpar;      //when declarator is function' name,lastpar has meaning.
     }
@@ -788,13 +800,13 @@ noptr-declarator:
     |declarator-id parameters-and-qualifiers                     //int f(int x)
     {
         $$.name = $1.name;
-        $$.psize = var_point;
+
         $$.lastpar = last_index;
 
         par_index = last_index;             //record current function's last parameter's index
         last_index = 0;                     //the function's parameter declaration is finished, set last_index = 0 
     
-        fetf_begin(&fe, final_out, $1.name, var_point);             //init emitter
+        fetf_begin(&fe, final_out, $1.name, 0);             //init emitter
     }
     |noptr-declarator left_bracket   constant-expression right_bracket
     |left_paren ptr-declarator right_paren
@@ -833,7 +845,7 @@ parameter-declaration:
         if(last_index != 0){
             Is_Valid_Declarator($2.name,last_index); 
         }
-        Enter_Nametab($1.type,$1.type_num,$1.basic_type,variable,$2.name,false,var_point,0,0x00,0,0,0,0,0,NULL,$2.ptr_level);
+        Enter_Nametab($1.type,$1.type_num,$1.basic_type,variable,$2.name,false,0,0x00,0,0,0,0,0,NULL,$2.ptr_level);
         
         Clear_current_type();                   //finish current type,need to be cleared.
     }
@@ -919,7 +931,7 @@ parameter-declaration:
             $4.d_val = (double)$4.f_val;
         }
 
-        Enter_Nametab($1.type,$1.type_num,$1.basic_type,variable,$2.name,false,var_point,$4.b_val,$4.c_val,$4.d_val,$4.f_val,$4.i_val,$4.l_val,$4.s_val,$4.p_val,$2.ptr_level);
+        Enter_Nametab($1.type,$1.type_num,$1.basic_type,variable,$2.name,false,$4.b_val,$4.c_val,$4.d_val,$4.f_val,$4.i_val,$4.l_val,$4.s_val,$4.p_val,$2.ptr_level);
     
         Clear_current_type();                   //finish current type,need to be cleared.
     }
@@ -1187,218 +1199,225 @@ additive-expression:                                //like: a + b     a - b
     }
  	|additive-expression plus multiplicative-expression
  	{
-        if($1.type == symbol_bool && $3.type == symbol_bool){
-            $$.type = symbol_bool;
-            $$.b_val = $1.b_val + $3.b_val;
-        }
-        else if($1.type == symbol_bool && $3.type == symbol_char){
-            $$.type = symbol_int;
-            $$.i_val = $1.b_val + (int)$3.c_val;
-        }
-        else if($1.type == symbol_bool && $3.type == symbol_double){
-            $$.type = symbol_double;
-            $$.d_val = (double)$1.b_val + $3.d_val;
-        }
-        else if($1.type == symbol_bool && $3.type == symbol_float){
-            $$.type = symbol_float;
-            $$.f_val = (float)$1.b_val + $3.f_val;
-        }
-        else if($1.type == symbol_bool && $3.type == symbol_int){
-            $$.type = symbol_int;
-            $$.i_val = (int)$1.b_val + $3.i_val;
-        }
-        // else if($1.type == symbol_bool && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = (long)$1.b_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_bool && $3.type == symbol_short){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.b_val + (int)$3.s_val;
-        // }
-        else if($1.type == symbol_bool && $3.type == symbol_point){
-            $$.type = symbol_int;
-            $$.i_val = (int)$1.b_val + (int)$3.s_val;
-        }
+
+        if($1.kind == variable || $3.kind == variable){                             //need generate code
+
+        }else{                                                                      //constant folding
+            if($1.type == symbol_bool && $3.type == symbol_bool){
+                $$.type = symbol_bool;
+                $$.b_val = $1.b_val + $3.b_val;
+            }
+            else if($1.type == symbol_bool && $3.type == symbol_char){
+                $$.type = symbol_int;
+                $$.i_val = $1.b_val + (int)$3.c_val;
+            }
+            else if($1.type == symbol_bool && $3.type == symbol_double){
+                $$.type = symbol_double;
+                $$.d_val = (double)$1.b_val + $3.d_val;
+            }
+            else if($1.type == symbol_bool && $3.type == symbol_float){
+                $$.type = symbol_float;
+                $$.f_val = (float)$1.b_val + $3.f_val;
+            }
+            else if($1.type == symbol_bool && $3.type == symbol_int){
+                $$.type = symbol_int;
+                $$.i_val = (int)$1.b_val + $3.i_val;
+            }
+            // else if($1.type == symbol_bool && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = (long)$1.b_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_bool && $3.type == symbol_short){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.b_val + (int)$3.s_val;
+            // }
+            else if($1.type == symbol_bool && $3.type == symbol_point){
+                $$.type = symbol_int;
+                $$.i_val = (int)$1.b_val + (int)$3.s_val;
+            }
         
 
-        else if($1.type == symbol_char && $3.type == symbol_bool){
-            $$.type = symbol_int;
-            $$.i_val = (int)$1.c_val + $3.b_val;
-        }
-        else if($1.type == symbol_char && $3.type == symbol_char){
-            $$.type = symbol_int;
-            $$.i_val = (int)$1.c_val + (int)$3.c_val;
-        }
-        else if($1.type == symbol_char && $3.type == symbol_double){
-            $$.type = symbol_double;
-            $$.d_val = (double)$1.c_val + $3.d_val;
-        }
-        else if($1.type == symbol_char && $3.type == symbol_float){
-            $$.type = symbol_float;
-            $$.f_val = (float)$1.c_val + $3.f_val;
-        }
-        else if($1.type == symbol_char && $3.type == symbol_int){
-            $$.type = symbol_int;
-            $$.i_val = (int)$1.c_val + $3.i_val;
-        }
-        // else if($1.type == symbol_char && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = (long)$1.c_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_char && $3.type == symbol_short){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.c_val + (int)$3.s_val;
-        // }
+            else if($1.type == symbol_char && $3.type == symbol_bool){
+                $$.type = symbol_int;
+                $$.i_val = (int)$1.c_val + $3.b_val;
+            }
+            else if($1.type == symbol_char && $3.type == symbol_char){
+                $$.type = symbol_int;
+                $$.i_val = (int)$1.c_val + (int)$3.c_val;
+            }
+            else if($1.type == symbol_char && $3.type == symbol_double){
+                $$.type = symbol_double;
+                $$.d_val = (double)$1.c_val + $3.d_val;
+            }
+            else if($1.type == symbol_char && $3.type == symbol_float){
+                $$.type = symbol_float;
+                $$.f_val = (float)$1.c_val + $3.f_val;
+            }
+            else if($1.type == symbol_char && $3.type == symbol_int){
+                $$.type = symbol_int;
+                $$.i_val = (int)$1.c_val + $3.i_val;
+            }
+            // else if($1.type == symbol_char && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = (long)$1.c_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_char && $3.type == symbol_short){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.c_val + (int)$3.s_val;
+            // }
 
 
-        else if($1.type == symbol_double && $3.type == symbol_bool){
-            $$.type = symbol_double;
-            $$.d_val = $1.d_val + (double)$3.b_val;
-        }
-        else if($1.type == symbol_double && $3.type == symbol_char){
-            $$.type = symbol_double;
-            $$.d_val = $1.d_val + (double)$3.c_val;
-        }
-        else if($1.type == symbol_double && $3.type == symbol_double){
-            $$.type = symbol_double;
-            $$.d_val = $1.d_val + $3.d_val;
-        }
-        else if($1.type == symbol_double && $3.type == symbol_float){
-            $$.type = symbol_double;
-            $$.d_val = $1.d_val + (double)$3.f_val;
-        }
-        else if($1.type == symbol_double && $3.type == symbol_int){
-            $$.type = symbol_double;
-            $$.d_val = $1.d_val + (double)$3.i_val;
-        }
-        // else if($1.type == symbol_double && $3.type == symbol_long){
-        //     $$.type = symbol_double;
-        //     $$.d_val = $1.d_val + (double)$3.l_val;
-        // }
-        // else if($1.type == symbol_double && $3.type == symbol_short){
-        //     $$.type = symbol_double;
-        //     $$.d_val = $1.d_val + (double)$3.s_val;
-        // }
+            else if($1.type == symbol_double && $3.type == symbol_bool){
+                $$.type = symbol_double;
+                $$.d_val = $1.d_val + (double)$3.b_val;
+            }
+            else if($1.type == symbol_double && $3.type == symbol_char){
+                $$.type = symbol_double;
+                $$.d_val = $1.d_val + (double)$3.c_val;
+            }
+            else if($1.type == symbol_double && $3.type == symbol_double){
+                $$.type = symbol_double;
+                $$.d_val = $1.d_val + $3.d_val;
+            }
+            else if($1.type == symbol_double && $3.type == symbol_float){
+                $$.type = symbol_double;
+                $$.d_val = $1.d_val + (double)$3.f_val;
+            }
+            else if($1.type == symbol_double && $3.type == symbol_int){
+                $$.type = symbol_double;
+                $$.d_val = $1.d_val + (double)$3.i_val;
+            }
+            // else if($1.type == symbol_double && $3.type == symbol_long){
+            //     $$.type = symbol_double;
+            //     $$.d_val = $1.d_val + (double)$3.l_val;
+            // }
+            // else if($1.type == symbol_double && $3.type == symbol_short){
+            //     $$.type = symbol_double;
+            //     $$.d_val = $1.d_val + (double)$3.s_val;
+            // }
 
 
-        else if($1.type == symbol_float && $3.type == symbol_bool){
-            $$.type = symbol_float;
-            $$.f_val = $1.f_val + (float)$3.b_val;
-        }
-        else if($1.type == symbol_float && $3.type == symbol_char){
-            $$.type = symbol_float;
-            $$.f_val = $1.f_val + (float)$3.c_val;
-        }
-        else if($1.type == symbol_float && $3.type == symbol_double){
-            $$.type = symbol_double;
-            $$.d_val = (double)$1.f_val + $3.d_val;
-        }
-        else if($1.type == symbol_float && $3.type == symbol_float){
-            $$.type = symbol_float;
-            $$.f_val = $1.f_val + $3.f_val;
-        }
-        else if($1.type == symbol_float && $3.type == symbol_int){
-            $$.type = symbol_float;
-            $$.f_val = $1.f_val + (float)$3.i_val;
-        }
-        // else if($1.type == symbol_float && $3.type == symbol_long){
-        //     $$.type = symbol_float;
-        //     $$.f_val = $1.f_val + (float)$3.l_val;
-        // }
-        // else if($1.type == symbol_float && $3.type == symbol_short){
-        //     $$.type = symbol_float;
-        //     $$.f_val = $1.f_val + (float)$3.s_val;
-        // }
+            else if($1.type == symbol_float && $3.type == symbol_bool){
+                $$.type = symbol_float;
+                $$.f_val = $1.f_val + (float)$3.b_val;
+            }
+            else if($1.type == symbol_float && $3.type == symbol_char){
+                $$.type = symbol_float;
+                $$.f_val = $1.f_val + (float)$3.c_val;
+            }
+            else if($1.type == symbol_float && $3.type == symbol_double){
+                $$.type = symbol_double;
+                $$.d_val = (double)$1.f_val + $3.d_val;
+            }
+            else if($1.type == symbol_float && $3.type == symbol_float){
+                $$.type = symbol_float;
+                $$.f_val = $1.f_val + $3.f_val;
+            }
+            else if($1.type == symbol_float && $3.type == symbol_int){
+                $$.type = symbol_float;
+                $$.f_val = $1.f_val + (float)$3.i_val;
+            }
+            // else if($1.type == symbol_float && $3.type == symbol_long){
+            //     $$.type = symbol_float;
+            //     $$.f_val = $1.f_val + (float)$3.l_val;
+            // }
+            // else if($1.type == symbol_float && $3.type == symbol_short){
+            //     $$.type = symbol_float;
+            //     $$.f_val = $1.f_val + (float)$3.s_val;
+            // }
 
 
-        else if($1.type == symbol_int && $3.type == symbol_bool){
-            $$.type = symbol_int;
-            $$.i_val = $1.i_val + $3.b_val;
-        }
-        else if($1.type == symbol_int && $3.type == symbol_char){
-            $$.type = symbol_int;
-            $$.i_val = $1.i_val + (int)$3.c_val;
-        }
-        else if($1.type == symbol_int && $3.type == symbol_double){
-            $$.type = symbol_double;
-            $$.d_val = (double)$1.i_val + $3.d_val;
-        }
-        else if($1.type == symbol_int && $3.type == symbol_float){
-            $$.type = symbol_float;
-            $$.f_val = (float)$1.i_val + $3.f_val;
-        }
-        else if($1.type == symbol_int && $3.type == symbol_int){
-            $$.type = symbol_int;
-            $$.i_val = $1.i_val + $3.i_val;
-        }
-        // else if($1.type == symbol_int && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = (long)$1.i_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_int && $3.type == symbol_short){
-        //     $$.type = symbol_int;
-        //     $$.i_val = $1.i_val + (int)$3.s_val;
-        // }
+            else if($1.type == symbol_int && $3.type == symbol_bool){
+                $$.type = symbol_int;
+                $$.i_val = $1.i_val + $3.b_val;
+            }
+            else if($1.type == symbol_int && $3.type == symbol_char){
+                $$.type = symbol_int;
+                $$.i_val = $1.i_val + (int)$3.c_val;
+            }
+            else if($1.type == symbol_int && $3.type == symbol_double){
+                $$.type = symbol_double;
+                $$.d_val = (double)$1.i_val + $3.d_val;
+            }
+            else if($1.type == symbol_int && $3.type == symbol_float){
+                $$.type = symbol_float;
+                $$.f_val = (float)$1.i_val + $3.f_val;
+            }
+            else if($1.type == symbol_int && $3.type == symbol_int){
+                $$.type = symbol_int;
+                $$.i_val = $1.i_val + $3.i_val;
+            }
+            // else if($1.type == symbol_int && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = (long)$1.i_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_int && $3.type == symbol_short){
+            //     $$.type = symbol_int;
+            //     $$.i_val = $1.i_val + (int)$3.s_val;
+            // }
 
 
-        // else if($1.type == symbol_long && $3.type == symbol_bool){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + (long)$3.b_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_char){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + (long)$3.c_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_double){
-        //     $$.type = symbol_double;
-        //     $$.d_val = (double)$1.l_val + $3.d_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_float){
-        //     $$.type = symbol_float;
-        //     $$.f_val = (float)$1.l_val + $3.f_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_int){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + (long)$3.i_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_long && $3.type == symbol_short){
-        //     $$.type = symbol_long;
-        //     $$.l_val = $1.l_val + (long)$3.s_val;
-        // }
+            // else if($1.type == symbol_long && $3.type == symbol_bool){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + (long)$3.b_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_char){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + (long)$3.c_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_double){
+            //     $$.type = symbol_double;
+            //     $$.d_val = (double)$1.l_val + $3.d_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_float){
+            //     $$.type = symbol_float;
+            //     $$.f_val = (float)$1.l_val + $3.f_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_int){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + (long)$3.i_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_long && $3.type == symbol_short){
+            //     $$.type = symbol_long;
+            //     $$.l_val = $1.l_val + (long)$3.s_val;
+            // }
 
 
-        // else if($1.type == symbol_short && $3.type == symbol_bool){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.s_val + $3.b_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_char){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.s_val + (int)$3.c_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_double){
-        //     $$.type = symbol_double;
-        //     $$.d_val = (double)$1.s_val + $3.d_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_float){
-        //     $$.type = symbol_float;
-        //     $$.f_val = (float)$1.s_val + $3.f_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_int){
-        //     $$.type = symbol_int;
-        //     $$.i_val = (int)$1.s_val + $3.i_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_long){
-        //     $$.type = symbol_long;
-        //     $$.l_val = (long)$1.s_val + $3.l_val;
-        // }
-        // else if($1.type == symbol_short && $3.type == symbol_short){
-        //     $$.type = symbol_short;
-        //     $$.s_val = $1.s_val + $3.s_val;
-        // }
+            // else if($1.type == symbol_short && $3.type == symbol_bool){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.s_val + $3.b_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_char){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.s_val + (int)$3.c_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_double){
+            //     $$.type = symbol_double;
+            //     $$.d_val = (double)$1.s_val + $3.d_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_float){
+            //     $$.type = symbol_float;
+            //     $$.f_val = (float)$1.s_val + $3.f_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_int){
+            //     $$.type = symbol_int;
+            //     $$.i_val = (int)$1.s_val + $3.i_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_long){
+            //     $$.type = symbol_long;
+            //     $$.l_val = (long)$1.s_val + $3.l_val;
+            // }
+            // else if($1.type == symbol_short && $3.type == symbol_short){
+            //     $$.type = symbol_short;
+            //     $$.s_val = $1.s_val + $3.s_val;
+            // }
+        }
+
+        
     }
     |additive-expression minus multiplicative-expression
     {
@@ -2226,9 +2245,9 @@ function-definition:
     decl-specifier-seq declarator function-body
     {  
         Is_Valid_Function($2.name);
-        Enter_Btab($1.type,$1.type_num,$1.basic_type,$2.name,$2.lastpar,last_index,$2.psize,var_point);      //enter btab;
+        Enter_Btab($1.type,$1.type_num,$1.basic_type,$2.name,$2.lastpar,last_index,par_point - 8,par_point - 8 + loc_point);      //enter btab;
 
-        fetf_fix_locals(&fe,var_point);                     //set real VSize
+        fetf_fix_locals(&fe,loc_point);                     //set real VSize
         fetf_end(&fe);                                      //insert prologue
     }
     ;
