@@ -21,7 +21,7 @@ enum symbol_type{
 };
 
 enum symbol_kind{
-    constant,variable,type,function
+    constant,variable
 };
 
 enum symbol_bitmask{                                //use to exam specifier conflict
@@ -100,9 +100,7 @@ struct atab_struct{
     unsigned int size;
 };
 
-struct code_struct{
 
-};
 
 
 struct nametab_struct nametab[TABLE_NUM];
@@ -115,14 +113,12 @@ int btab_count = 1;
 
 int par_point = 8;                                  //参数偏移
 int loc_point = 0;                                  //局部变量偏移
-int var_point = 0;                                  //
+
 
 
 
 struct atab_struct atab[TABLE_NUM];
 
-struct code_struct code[TABLE_NUM];
-unsigned int cx = 0;
 
 int current_type[10];
 int current_type_num = 0;
@@ -130,8 +126,6 @@ int current_basic_type;
 
 int bitsmask = 0;                                   //use to exam specifier conflict
 
-int stack[10];
-int sp = 0;
 
 
 
@@ -143,7 +137,10 @@ void Enter_Btab(int type[],int type_num,int basic_type,char* name,int lastpar,in
 
 void Is_Valid_Declarator(char* name,int loop);
 void Is_Valid_Function(char* name);
+void Research_Name(char* name);
 void Is_correct_specifier();
+int Research_AddressOfVar(int loop,char* name);
+int Research_FunctionReturnType(char* name);
 
 void Display_Nametab();
 void Display_Btab();
@@ -151,8 +148,6 @@ void Display_Btab();
 void Clear_current_type();
 void Clear_After_Declaration();
 
-void pushStack(int ele);
-int popStack();
 
 
 extern int yylineno;
@@ -263,6 +258,23 @@ void Is_Valid_Function(char* name){
     }
 }
 
+// void Research_Name(char* name){
+//     for(int i = 1;i < btab_count;i++){
+//         if(strcmp(name,btab[i].name) == 0){
+//             return;
+//         }
+//     }
+
+//     for(int i = 1;i < nametab_count;i++){
+//         if(strcmp(name,nametab[i].name) == 0){
+//             return;
+//         }
+//     }
+
+//     printf("wrong:\tdon't reasearch the name %s",name);
+//     exit(0);
+// }
+
 void Is_correct_specifier(){
     int tmp = bitsmask;
     int bits1 = tmp & 0x003F;
@@ -296,6 +308,24 @@ void Is_correct_specifier(){
     }
 }
 
+int Research_AddressOfVar(int loop,char* name){
+    while(loop != 0){
+        if(strcmp(name,nametab[loop].name) == 0){
+            return nametab[loop].adr;
+        }
+        loop = nametab[loop].link;
+    }
+    return loop;
+}
+
+int Research_FunctionReturnType(char* name){
+    for(int i = 1;i < btab_count;i++){
+        if(strcmp(name,btab[i].name) == 0){
+            return btab[i].basic_type;
+        }
+    }
+}
+
 
 void Display_Nametab(){
     printf("the following is name table (nametab):\n");
@@ -326,8 +356,7 @@ void Display_Nametab(){
 
     kind_name[constant] = strdup("point");
     kind_name[variable] = strdup("variable");
-    kind_name[type] = strdup("type");
-    kind_name[function] = strdup("function");
+
 
     for(int i = 1;i < nametab_count;i++){
         
@@ -442,15 +471,6 @@ void Clear_After_Declaration(){
     par_index = 0;
 }
 
-void pushStack(int ele){
-    stack[sp++] = ele;
-}
-
-int popStack(){
-    return stack[--sp];
-}
-
-
 
 %}
 
@@ -471,6 +491,8 @@ int popStack(){
     struct {
         int type;
         int kind;                       //constant or variable
+        char* name;
+
         union {
             int b_val;                  //bool
             char c_val;
@@ -485,6 +507,26 @@ int popStack(){
     }expr_attri;
 
     struct {
+        int count;  /* 实参个数 */
+        struct {
+            int type;
+            int kind;      /* constant 或 variable */
+            char* name;    /* 变量名（常量时可忽略） */
+            union {
+                int b_val;
+                char c_val;
+                double d_val;
+                float f_val;
+                int i_val;
+                long l_val;
+                short s_val;
+                void* p_val;
+            };
+            int size;      
+        } args[32];
+    } arg_list;
+
+    struct {
        int type[10];
        int type_num;
        int basic_type;
@@ -497,6 +539,8 @@ int popStack(){
 %type<expr_attri> additive-expression multiplicative-expression pm-expression cast-expression unary-expression postfix-expression primary-expression
 %type<expr_attri> literal integer-literal character-literal floating-literal string-literal boolean-literal pointer-literal
 %type<expr_attri> initializer-clause brace-or-equal-initializer initializer
+
+%type<arg_list> expression-list initializer-list
 
 %type<sval> unqualified-id id-expression declarator-id noptr-declarator ptr-declarator declarator
 
@@ -578,7 +622,7 @@ simple-declaration:
     {
         Clear_current_type();                   //finish current type,need to be cleared.
     }
-    |init-declarator-list semicolon
+
     |semicolon
     ;
 
@@ -981,6 +1025,8 @@ brace-or-equal-initializer:
 initializer-clause:
     assignment-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1002,6 +1048,8 @@ constant-expression:
 expression:                                         //like: x = 1, y = 2;
     assignment-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1018,6 +1066,8 @@ expression:                                         //like: x = 1, y = 2;
 assignment-expression:                                      //like: x += y;
     conditional-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1035,7 +1085,8 @@ assignment-expression:                                      //like: x += y;
 conditional-expression:                             //like: bool y = (a > b ? 1 : 0);
     logical-or-expression
     {
-
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1054,6 +1105,8 @@ conditional-expression:                             //like: bool y = (a > b ? 1 
 logical-or-expression:                              //like: a || b
     logical-and-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1070,6 +1123,8 @@ logical-or-expression:                              //like: a || b
 logical-and-expression:                             //like: a && b
     inclusive-or-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1086,6 +1141,8 @@ logical-and-expression:                             //like: a && b
 inclusive-or-expression:                            //like: a | b
     exclusive-or-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1102,6 +1159,8 @@ inclusive-or-expression:                            //like: a | b
 exclusive-or-expression:                            //like: a ^ b
     and-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1118,6 +1177,8 @@ exclusive-or-expression:                            //like: a ^ b
 and-expression:                                     //like: a & b
     equality-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1134,6 +1195,8 @@ and-expression:                                     //like: a & b
 equality-expression:                                //like: a == b     a != b
 	relational-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1151,6 +1214,8 @@ equality-expression:                                //like: a == b     a != b
 relational-expression:                              //like: a < b  a > b   a <= b  a >= b
     shift-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1170,6 +1235,8 @@ relational-expression:                              //like: a < b  a > b   a <= 
 shift-expression:                                   //like: a << 2  a >> 2
     additive-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1187,6 +1254,8 @@ shift-expression:                                   //like: a << 2  a >> 2
 additive-expression:                                //like: a + b     a - b
     multiplicative-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1634,6 +1703,8 @@ additive-expression:                                //like: a + b     a - b
 multiplicative-expression:                                          //like: a * b    a / b    a % b
     pm-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1964,6 +2035,8 @@ multiplicative-expression:                                          //like: a * 
 pm-expression:
     cast-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1981,6 +2054,8 @@ pm-expression:
 cast-expression:                                                    //like: (double) a
     unary-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -1997,6 +2072,8 @@ cast-expression:                                                    //like: (dou
 unary-expression:
     postfix-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -2019,6 +2096,8 @@ unary-expression:
 postfix-expression:
     primary-expression
     {
+        $$.kind = $1.kind;
+        $$.name = $1.name;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -2030,8 +2109,82 @@ postfix-expression:
         else if($$.type == symbol_point) {$$.p_val = $1.p_val; $$.size = $1.size;}
     }
  	|postfix-expression left_bracket expression right_bracket                      //like: arr[3]
- 	|postfix-expression left_paren  right_paren                                //like: foo()、bar(1, 2)
-    |postfix-expression left_paren expression-list right_paren
+ 	|postfix-expression left_paren  right_paren                                //like: foo()
+    {
+        fetf_emit(&fe,"    call %s\n",$1.name);
+    }
+    |postfix-expression left_paren expression-list right_paren                  //like: foo(1, 2)
+    {
+        for(int i = $3.count - 1;i >= 0;i--){
+            if($3.args[i].kind == constant){
+                if($3.args[i].type == symbol_bool) fetf_emit(&fe,"    push %d\n",$3.args[i].b_val);
+                else if($3.args[i].type == symbol_char) fetf_emit(&fe,"    push %d\n",(int)$3.args[i].c_val);
+                else if($3.args[i].type == symbol_double) {
+                    union { double d; unsigned int u32[2]; } dbits;
+                    dbits.d = $3.args[i].d_val;
+                    /* Reserve 8 bytes then store low 32 then high 32 (little-endian) */
+                    fetf_emit(&fe, "    sub esp, 8\n");
+                    fetf_emit(&fe, "    mov dword [esp], 0x%08X\n", dbits.u32[0]);
+                    fetf_emit(&fe, "    mov dword [esp+4], 0x%08X\n", dbits.u32[1]);
+                }
+                else if($3.args[i].type == symbol_float) {
+                    union { float f; unsigned int u32; } fbits;
+                    fbits.f = $3.args[i].f_val;
+                    /* Reserve 4 bytes then store the 32-bit pattern */
+                    fetf_emit(&fe, "    sub esp, 4\n");
+                    fetf_emit(&fe, "    mov dword [esp], 0x%08X\n", fbits.u32);
+                }
+                else if($3.args[i].type == symbol_int) fetf_emit(&fe,"    push %d\n",$3.args[i].i_val);
+
+            }
+            else{
+                
+                int adr = Research_AddressOfVar(par_index,$3.args[i].name);                 //research paramter
+                if(adr == 0) adr = Research_AddressOfVar(last_index,$3.args[i].name);        //research local var
+                if(adr == 0){printf("wrong:\tcan't find the %s",$3.args[i].name); exit(0);}
+
+                if(adr > 0) fetf_emit(&fe, "    push WORD PTR [ebp+%d]\n",adr);
+                else fetf_emit(&fe, "    push WORD PTR [ebp%d]\n",adr);
+            }
+        }
+
+        /* 统计参数总字节数（用于 cdecl 调用者清栈） */
+        int __arg_bytes = 0;
+        for (int i = 0; i < $3.count; ++i) {
+            switch ($3.args[i].type) {
+                case symbol_double: __arg_bytes += 8; break;
+                case symbol_float:  __arg_bytes += 4; break;
+                default:            __arg_bytes += 4; break; /* push 都是 4 字节 */
+            }
+        }
+
+        fetf_emit(&fe, "    call %s\n",$1.name);
+
+        /* 调用者清栈 */
+        if (__arg_bytes > 0) {
+            fetf_emit(&fe, "    add esp, %d\n", __arg_bytes);
+        }
+
+        /* 查询被调函数返回类型 */
+        int __ret_type = Research_FunctionReturnType($1.name);
+        if (__ret_type == symbol_bool ||
+            __ret_type == symbol_char ||
+            __ret_type == symbol_short ||
+            __ret_type == symbol_int ||
+            __ret_type == symbol_long ||
+            __ret_type == symbol_point) {
+            fetf_emit(&fe, "    push eax\n");
+        } else if (__ret_type == symbol_float) {
+            fetf_emit(&fe, "    sub esp, 4\n");
+            fetf_emit(&fe, "    fstp dword [esp]\n");
+        } else if (__ret_type == symbol_double) {
+            fetf_emit(&fe, "    sub esp, 8\n");
+            fetf_emit(&fe, "    fstp qword [esp]\n");
+        } else if (__ret_type == symbol_void) {
+        /* 不压任何东西。*/
+        }
+
+    }
  	|simple-type-specifier left_paren  right_paren          
     |simple-type-specifier left_paren expression-list right_paren      //like: int(3.14)  3.14-->3
  	|postfix-expression dot   id-expression                   //like: obj.member
@@ -2043,6 +2196,7 @@ postfix-expression:
 primary-expression:                                                 //like: x、42、(a + b)
     literal
     {
+        $$.kind = constant;
         $$.type = $1.type;
         if($$.type == symbol_bool) $$.b_val = $1.b_val;
         else if($$.type == symbol_char) $$.c_val = $1.c_val;
@@ -2067,7 +2221,9 @@ primary-expression:                                                 //like: x、
     }
  	|id-expression
     {
-        
+        // Research_Name($1.name);
+        $$.kind = variable;
+        $$.name = $1.name;
     }
     ;
     
@@ -2129,6 +2285,9 @@ floating-literal:
 
 string-literal:
     id-expression
+    {
+
+    }
     ;
 
 boolean-literal:
@@ -2233,11 +2392,45 @@ braced-init-list:
 
 expression-list:
     initializer-list
+    {
+        $$.count = $1.count;
+        for(int i = 0; i < $1.count; ++i) $$.args[i] = $1.args[i];
+    }
     ;
 
 initializer-list:
-    initializer-clause 
+    initializer-clause{
+        $$.count = 1;
+        $$.args[0].kind = $1.kind;
+        $$.args[0].name = $1.name;
+        $$.args[0].type = $1.type;
+        if($1.type == symbol_bool) $$.args[0].b_val = $1.b_val;
+        else if($1.type == symbol_char) $$.args[0].c_val = $1.c_val;
+        else if($1.type == symbol_double) $$.args[0].d_val = $1.d_val;
+        else if($1.type == symbol_float) $$.args[0].f_val = $1.f_val;
+        else if($1.type == symbol_int) $$.args[0].i_val = $1.i_val;
+        else if($1.type == symbol_long) $$.args[0].l_val = $1.l_val;
+        else if($1.type == symbol_short) $$.args[0].s_val = $1.s_val;
+        else if($1.type == symbol_point) {$$.args[0].p_val = $1.p_val; $$.args[0].size = $1.size;}  
+    } 
  	|initializer-list comma initializer-clause
+    {
+        $$.count = $1.count + 1;
+        for(int i = 0; i < $1.count; ++i) $$.args[i] = $1.args[i];
+        
+        int k = $1.count;
+        $$.args[k].type = $3.type;
+        $$.args[k].kind = $3.kind;
+        $$.args[k].name = $3.name;
+        if($3.type == symbol_bool) $$.args[k].b_val = $3.b_val;
+        else if($3.type == symbol_char) $$.args[k].c_val = $3.c_val;
+        else if($3.type == symbol_double) $$.args[k].d_val = $3.d_val;
+        else if($3.type == symbol_float) $$.args[k].f_val = $3.f_val;
+        else if($3.type == symbol_int) $$.args[k].i_val = $3.i_val;
+        else if($3.type == symbol_long) $$.args[k].l_val = $3.l_val;
+        else if($3.type == symbol_short) $$.args[k].s_val = $3.s_val;
+        else if($3.type == symbol_point) { $$.args[k].p_val = $3.p_val; $$.args[k].size = $3.size; }
+    }
     ;
 
 /*function definition*/
@@ -2326,6 +2519,16 @@ jump-statement:
  	|continuesym semicolon                          //like: continue;
  	|returnsym  semicolon                           //like: return;
     |returnsym expression semicolon                 //like: return x+y;
+    {
+        if($2.kind == constant){
+            if($2.type == symbol_bool) fetf_emit(&fe,"    mov eax,%d\n",$2.b_val);
+            else if($2.type == symbol_char) fetf_emit(&fe,"     mov eax,%d\n",(int)$2.c_val);
+            else if($2.type == symbol_int) fetf_emit(&fe,"    mov eax,%d\n",$2.i_val);
+        }
+        else{
+            fetf_emit(&fe,"    pop eax\n");
+        }
+    }
     |returnsym braced-init-list semicolon           //like: return {1};
  	|gotosym identifier semicolon                   //like: goto start;
     ;

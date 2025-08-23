@@ -20,7 +20,7 @@ typedef struct {
 
 
 
-// 你可以用一个全局计数器确保标签唯一
+
 static int g_func_uid = 0;
 
 static inline void fetf_begin(FuncEmitterTF *fe, FILE *final_out,

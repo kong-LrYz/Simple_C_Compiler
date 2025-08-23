@@ -156,7 +156,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 458 "parser.y"
+#line 478 "parser.y"
 
     int ival;
     float fval;
@@ -173,6 +173,8 @@ union YYSTYPE
     struct {
         int type;
         int kind;                       //constant or variable
+        char* name;
+
         union {
             int b_val;                  //bool
             char c_val;
@@ -187,6 +189,26 @@ union YYSTYPE
     }expr_attri;
 
     struct {
+        int count;  /* 实参个数 */
+        struct {
+            int type;
+            int kind;      /* constant 或 variable */
+            char* name;    /* 变量名（常量时可忽略） */
+            union {
+                int b_val;
+                char c_val;
+                double d_val;
+                float f_val;
+                int i_val;
+                long l_val;
+                short s_val;
+                void* p_val;
+            };
+            int size;      
+        } args[32];
+    } arg_list;
+
+    struct {
        int type[10];
        int type_num;
        int basic_type;
@@ -194,7 +216,7 @@ union YYSTYPE
 
 
 
-#line 198 "parser.h"
+#line 220 "parser.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
