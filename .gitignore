@@ -2,3 +2,6 @@
 parser.dSYM
 node_modules/
 demo.c
+expression.drawio
+package-lock.json
+package.json
